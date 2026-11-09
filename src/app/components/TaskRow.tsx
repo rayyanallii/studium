@@ -47,8 +47,8 @@ export function TaskRow({ task, timezone, onEdit, showSubject = true }: { task: 
       </button>
 
       <button type="button" onClick={() => onEdit(task)} className="min-w-0 flex-1 text-left">
-        <span className={cx('block truncate text-[13.5px] font-medium', done && 'line-through')}>{task.title}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-faint">
+        <span className={cx('block truncate text-[15px] font-medium', done && 'line-through')}>{task.title}</span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-faint">
           {showSubject && task.subjectName && (
             <span className="inline-flex items-center gap-1.5">
               <span className="round size-1.5 rounded-full" style={{ background: task.subjectColor }} />

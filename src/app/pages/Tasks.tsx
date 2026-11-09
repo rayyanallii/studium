@@ -55,7 +55,7 @@ export function Tasks() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search tasks"
               aria-label="Search tasks"
-              className="h-9 w-full rounded-control border border-line-strong bg-surface pl-9 pr-3 text-[13.5px] placeholder:text-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/15"
+              className="h-9 w-full rounded-control border border-line-strong bg-panel pl-9 pr-3 text-[15px] placeholder:text-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/15"
             />
           </label>
           <Select value={subjectId} onValueChange={(value) => setSubjectId(value)} className="sm:w-[168px]" aria-label="Filter by subject">

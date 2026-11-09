@@ -2,6 +2,16 @@
 
 ## Current implementation
 
+Studium now includes a study library, AI flashcards, scored quizzes, and
+source-grounded AI notebooks alongside the planner. Whop's official Frosted UI
+provides controls, with near-black/white surfaces, blue actions, larger Inter
+type, a full-width search header, and a wider sidebar. Upload PDFs, DOCX files and
+pictures, or paste notes. See the [study workspace roadmap](docs/study-workspace-roadmap.md)
+for current behavior and planned AI features. Use `npm test` for the study logic
+checks. `STUDY_AI_DAILY_LIMIT` defaults to 30 calls per user per rolling day.
+
+### Earlier foundation pass
+
 The November 9, 2026 update adds Base UI controls, a neutral dark/white visual
 system, a revised responsive dashboard and navigation, and configurable
 Supabase email authentication. See [implementation status](docs/implementation-status.md)

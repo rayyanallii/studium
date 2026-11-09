@@ -17,6 +17,7 @@ export interface Env {
   AI_BASE_URL?: string
   AI_MODEL?: string
   AI_DAILY_LIMIT?: string
+  STUDY_AI_DAILY_LIMIT?: string
 }
 
 export type Variables = {

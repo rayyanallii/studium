@@ -66,7 +66,7 @@ export function Subjects() {
             <motion.div key={subject.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: index * 0.04 }}>
               <Card className="flex h-full flex-col p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="grid size-10 place-items-center rounded-[11px]" style={{ background: `color-mix(in srgb, ${subject.color} 14%, var(--color-surface))`, color: subject.color }}>
+                  <span className="grid size-10 place-items-center rounded-[11px]" style={{ background: `color-mix(in srgb, ${subject.color} 14%, var(--color-panel))`, color: subject.color }}>
                     <BookOpen className="size-5" />
                   </span>
                   <Menu
@@ -85,7 +85,7 @@ export function Subjects() {
                 <Link to={`/subjects/${subject.id}`} className="mt-3 block">
                   <h3 className="truncate text-[16px] font-semibold tracking-tight hover:text-accent">{subject.name}</h3>
                 </Link>
-                <p className="mt-1 line-clamp-2 min-h-[32px] text-[12.5px] leading-relaxed text-muted">{subject.description || 'No description yet.'}</p>
+                <p className="mt-1 line-clamp-2 min-h-[32px] text-[14px] leading-relaxed text-muted">{subject.description || 'No description yet.'}</p>
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <Badge tone={priorityTone[subject.priority]}>{subject.priority}</Badge>
@@ -99,7 +99,7 @@ export function Subjects() {
                 </div>
 
                 <div className="mt-auto pt-4">
-                  <div className="flex items-center justify-between text-[11.5px]">
+                  <div className="flex items-center justify-between text-[13px]">
                     <span className="text-faint">
                       {goal ? `${minutesLabel(subject.stats.studiedWeekMinutes)} of ${minutesLabel(goal)} this week` : `${minutesLabel(subject.stats.studiedWeekMinutes)} studied this week`}
                     </span>
@@ -108,7 +108,7 @@ export function Subjects() {
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
                     <div className="h-full rounded-full" style={{ width: `${goal ? Math.min(100, value) : 0}%`, background: subject.color }} />
                   </div>
-                  <div className="mt-2.5 flex items-center gap-3 text-[11.5px] text-faint">
+                  <div className="mt-2.5 flex items-center gap-3 text-[13px] text-faint">
                     <span>{subject.stats.openTasks} open</span>
                     <span>{subject.stats.topics} topics</span>
                     <span>{minutesLabel(subject.stats.plannedWeekMinutes)} planned</span>
@@ -125,7 +125,7 @@ export function Subjects() {
             className="flex min-h-[186px] flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-line-strong text-muted transition-colors hover:border-accent hover:text-accent"
           >
             <Plus className="size-5" />
-            <span className="text-[13.5px] font-medium">New subject</span>
+            <span className="text-[15px] font-medium">New subject</span>
           </button>
         )}
       </div>

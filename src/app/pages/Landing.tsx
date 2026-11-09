@@ -1,5 +1,5 @@
 import { animate, stagger } from 'animejs'
-import { ArrowRight, BarChart, CalendarCheck, Check, Clock, Sparkles, Target, WandSparkles } from 'lucide-react'
+import { ArrowRight, BarChart, CalendarCheck, Check, Clock, Sparkles, Target, WandSparkles, Layers, NotebookPen, ScanLine, Upload } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
@@ -8,6 +8,10 @@ import { TAGLINE } from '../../shared/types'
 import { ThemeToggle } from '../components/ThemeProvider'
 
 const FEATURES = [
+  { icon: Layers, title: 'AI flashcards', detail: 'Turn your course material into active-recall cards, reveal the answers, and keep track of what you have learned.' },
+  { icon: ScanLine, title: 'AI quizzes', detail: 'Check your understanding with questions from your sources, scored attempts, and explanations you can verify.' },
+  { icon: NotebookPen, title: 'AI notebooks', detail: 'Explore summaries and ask questions grounded in your own sources, with quotations linked to the original text.' },
+  { icon: Upload, title: 'One study library', detail: 'Bring PDFs, Word documents, pictures and pasted notes together. Reuse a source across all your study tools.' },
   { icon: WandSparkles, title: 'AI-assisted planning', detail: 'Studium reads your subjects, deadlines and difficulty ratings, then recommends what deserves the next hour.' },
   { icon: CalendarCheck, title: 'Adaptive scheduling', detail: 'Skip a session or add an exam and the plan is recalculated around the work that is left, never over your history.' },
   { icon: Target, title: 'Deadlines that matter', detail: 'Assessments and due dates pull work forward automatically, so urgent tasks finish before they are due.' },
@@ -51,7 +55,7 @@ export function Landing() {
             </span>
             <span className="font-semibold tracking-tight text-[20px]">Studium</span>
           </Link>
-          <nav className="hidden items-center gap-6 text-[13.5px] text-muted sm:flex">
+          <nav className="hidden items-center gap-6 text-[15px] text-muted sm:flex">
             <a href="#features" className="transition-colors hover:text-fg">
               Features
             </a>
@@ -61,7 +65,7 @@ export function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link to="/login" className="inline-flex h-9 items-center gap-1.5 rounded-control bg-fg px-4 text-[13.5px] font-medium text-bg transition-opacity hover:opacity-90">
+            <Link to="/login" className="inline-flex h-9 items-center gap-1.5 rounded-control bg-fg px-4 text-[15px] font-medium text-bg transition-opacity hover:opacity-90">
               Sign in
               <ArrowRight className="size-3.5" />
             </Link>
@@ -72,26 +76,26 @@ export function Landing() {
       <main>
         <section className="mx-auto grid max-w-[1100px] items-center gap-12 px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[12px] font-medium text-muted">
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-[14px] font-medium text-muted">
               <Sparkles className="size-3.5 text-accent" />
               {TAGLINE}
             </p>
             <h1 className="mt-5 text-balance text-[40px] font-semibold leading-[1.03] tracking-[-0.035em] sm:text-[58px]">
-              Your studies, <span className="font-serif italic text-accent">intelligently</span> planned.
+              Your materials. A better way to learn.
             </h1>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-muted">
-              Turn your subjects, deadlines and goals into a personalized study plan that adapts to your progress.
+              Turn course materials into flashcards, quizzes and source-grounded notebooks. Make a study plan, then put it into practice.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link to="/login" className="inline-flex h-11 items-center gap-2 rounded-control bg-accent px-5 text-[14.5px] font-medium text-on-accent shadow-float transition-colors hover:bg-accent-deep">
-                Start Planning for Free
+                Open your study workspace
                 <ArrowRight className="size-4" />
               </Link>
-              <a href="#features" className="inline-flex h-11 items-center rounded-control border border-line-strong bg-surface px-5 text-[14.5px] font-medium transition-colors hover:bg-surface-2">
+              <a href="#features" className="inline-flex h-11 items-center rounded-control border border-line-strong bg-panel px-5 text-[14.5px] font-medium transition-colors hover:bg-surface-2">
                 Explore Features
               </a>
             </div>
-            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-faint">
+            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[14px] text-faint">
               {['No calendar to maintain', 'Works with your real availability', 'Your data stays yours'].map((item) => (
                 <li key={item} className="inline-flex items-center gap-1.5">
                   <Check className="size-3.5 text-success" />
@@ -108,13 +112,13 @@ export function Landing() {
             className="relative mx-auto w-full max-w-[460px]"
           >
             <div className="absolute inset-0 translate-x-3 translate-y-3 rotate-[3deg] rounded-[24px] bg-accent-soft" />
-            <div className="relative rounded-[22px] border border-line bg-surface p-5 shadow-float">
+            <div className="relative rounded-[22px] border border-line bg-panel p-5 shadow-float">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.12em] text-faint">This week</p>
                   <p className="mt-0.5 text-[15px] font-semibold">Six sessions, 4h 30m</p>
                 </div>
-                <span className="rounded-tile bg-success-soft px-2 py-1 text-[11.5px] font-medium text-success">On track</span>
+                <span className="rounded-tile bg-success-soft px-2 py-1 text-[13px] font-medium text-success">On track</span>
               </div>
 
               <div className="mt-4 space-y-2">
@@ -126,8 +130,8 @@ export function Landing() {
                   <div key={session.title} className="flex items-center gap-3 rounded-card border border-line px-3 py-2.5">
                     <span className="h-8 w-1 rounded-full" style={{ background: session.color }} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-medium">{session.title}</span>
-                      <span className="block text-[11.5px] text-faint">{session.time}</span>
+                      <span className="block truncate text-[15px] font-medium">{session.title}</span>
+                      <span className="block text-[13px] text-faint">{session.time}</span>
                     </span>
                     <span className="rounded-tile bg-surface-2 px-2 py-0.5 text-[11px] text-muted">50m</span>
                   </div>
@@ -142,15 +146,15 @@ export function Landing() {
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-[11.5px] leading-relaxed text-faint">Illustrative preview — your plan is built from your own subjects and availability.</p>
+              <p className="mt-3 text-[13px] leading-relaxed text-faint">Illustrative preview — your plan is built from your own subjects and availability.</p>
             </div>
           </motion.div>
         </section>
 
-        <section id="features" className="border-t border-line bg-surface/40">
+        <section id="features" className="border-t border-line bg-panel/40">
           <div className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
             <div className="max-w-xl">
-              <p className="text-[12px] font-medium text-accent">What it does</p>
+              <p className="text-[14px] font-medium text-accent">What it does</p>
               <h2 className="mt-2 text-balance text-[28px] font-semibold tracking-[-0.025em] sm:text-[34px]">An intelligent study workspace, not another task list.</h2>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -161,13 +165,13 @@ export function Landing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-60px' }}
                   transition={{ duration: 0.45, delay: index * 0.05 }}
-                  className={index === 0 ? 'rounded-card border border-accent/20 bg-accent-soft/60 p-5 sm:col-span-2 lg:col-span-1' : 'rounded-card border border-line bg-surface p-5'}
+                  className={index === 0 ? 'rounded-card border border-accent/20 bg-accent-soft/60 p-5 sm:col-span-2 lg:col-span-1' : 'rounded-card border border-line bg-panel p-5'}
                 >
-                  <span className="grid size-9 place-items-center rounded-tile bg-surface text-accent shadow-card">
+                  <span className="grid size-9 place-items-center rounded-tile bg-panel text-accent shadow-card">
                     <feature.icon className="size-4" />
                   </span>
                   <h3 className="mt-4 text-[15px] font-semibold">{feature.title}</h3>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{feature.detail}</p>
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-muted">{feature.detail}</p>
                 </motion.div>
               ))}
             </div>
@@ -176,15 +180,15 @@ export function Landing() {
 
         <section id="how" className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
           <div className="max-w-xl">
-            <p className="text-[12px] font-medium text-accent">How it works</p>
+            <p className="text-[14px] font-medium text-accent">How it works</p>
             <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.025em] sm:text-[34px]">Three steps to a week you can actually follow.</h2>
           </div>
           <ol className="mt-10 grid gap-4 lg:grid-cols-3">
             {STEPS.map((step, index) => (
-              <li key={step.title} className="rounded-card border border-line bg-surface p-6">
+              <li key={step.title} className="rounded-card border border-line bg-panel p-6">
                 <span className="font-serif text-[40px] leading-none text-accent/35">0{index + 1}</span>
                 <h3 className="mt-4 text-[16px] font-semibold">{step.title}</h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{step.detail}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-muted">{step.detail}</p>
               </li>
             ))}
           </ol>
@@ -213,9 +217,9 @@ export function Landing() {
               </span>
               <span className="font-serif text-[19px]">Studium</span>
             </div>
-            <p className="mt-2.5 text-[12.5px] leading-relaxed text-muted">An AI study planner that turns academic workload into a realistic schedule you can follow.</p>
+            <p className="mt-2.5 text-[14px] leading-relaxed text-muted">An AI study planner that turns academic workload into a realistic schedule you can follow.</p>
           </div>
-          <nav className="flex flex-wrap gap-x-8 gap-y-2 text-[13px] text-muted">
+          <nav className="flex flex-wrap gap-x-8 gap-y-2 text-[15px] text-muted">
             <a href="#features" className="hover:text-fg">
               Features
             </a>
@@ -230,7 +234,7 @@ export function Landing() {
             </Link>
           </nav>
         </div>
-        <p className="mt-8 border-t border-line pt-5 text-[12px] text-faint">© {new Date().getFullYear()} Studium. A personal study project.</p>
+        <p className="mt-8 border-t border-line pt-5 text-[14px] text-faint">© {new Date().getFullYear()} Studium. A personal study project.</p>
       </footer>
     </div>
   )

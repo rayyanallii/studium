@@ -1,5 +1,17 @@
 # Studium implementation status
 
+## Current: expanded study workspace with Frosted UI
+
+The latest November 9 visual update uses Whop's official Frosted UI and adds
+source uploads, AI flashcards, quizzes and a source-grounded notebook. See the
+[current scope and roadmap](study-workspace-roadmap.md) for implemented behavior,
+limits, verification and the next AI features. The section below records the
+earlier foundation pass. The current design follows the supplied Whop reference:
+near-black surfaces, white text, blue primary controls, larger Inter typography,
+a full-width search header and wider neutral sidebar. The Next.js/PostgreSQL
+migration remains outstanding. Typecheck, production build, six logic tests,
+live AI generation and browser upload/study/planner checks passed locally.
+
 ## November 9, 2026: Base UI and visual foundation
 
 The existing Vite/React/Hono application has been retained for this first

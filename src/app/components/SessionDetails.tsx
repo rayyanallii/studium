@@ -79,7 +79,7 @@ export function SessionDetails({
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={session.status === 'completed' ? 'success' : session.status === 'missed' ? 'danger' : session.status === 'skipped' ? 'warning' : 'neutral'}>{session.status.replace('_', ' ')}</Badge>
           {session.isLocked && <Badge tone="warning">Locked against replanning</Badge>}
-          <span className="text-[12px] text-faint">{minutesLabel(session.actualMinutes)} recorded</span>
+          <span className="text-[14px] text-faint">{minutesLabel(session.actualMinutes)} recorded</span>
         </div>
 
         {!finished ? (
@@ -95,13 +95,13 @@ export function SessionDetails({
                 <FieldInput type="time" value={form.end} onChange={(event) => setForm({ ...form, end: event.target.value })} />
               </Field>
             </div>
-            <p className="-mt-2 text-[12px] text-faint">New times are checked against your availability and other sessions. Moving a session locks it against future replans.</p>
+            <p className="-mt-2 text-[14px] text-faint">New times are checked against your availability and other sessions. Moving a session locks it against future replans.</p>
 
             {save.error && (
               <Alert tone="warning" title={save.error.message}>
                 {alternatives.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-[12.5px]">These times are free:</p>
+                    <p className="text-[14px]">These times are free:</p>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {alternatives.map((alternative) => (
                         <Button

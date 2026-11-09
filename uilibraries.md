@@ -1,3 +1,7 @@
+## Current visual direction
+
+Use Whop’s official Frosted UI components, neutral near-black and white surfaces, blue primary actions, Inter typography, and a full-width header with spacious sidebar navigation. This supersedes the earlier library preferences below.
+
 https://animejs.com/
 npm i animejs
 npx shadcn@latest add https://registry.watermelon.sh/r/<name>.json

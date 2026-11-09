@@ -141,7 +141,7 @@ export function Onboarding() {
     setError(null)
     try {
       if (proposal) await accept.mutateAsync(proposal.id)
-      await updateProfile.mutateAsync({ onboardingCompleted: true, onboardingStep: 6, timezone })
+      await updateProfile.mutateAsync({ onboardingCompleted: true, onboardingStep: 6, timezone, displayName: form.displayName.trim() || me.profile.displayName })
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : 'Could not finish onboarding.')
     }
@@ -159,10 +159,12 @@ export function Onboarding() {
             <span className="relative ml-[7px] h-[13px] w-[7px] rounded-r-[2px] bg-on-accent" />
           </span>
           <span className="font-semibold tracking-tight text-[20px]">Studium</span>
-          <span className="ml-auto text-[12.5px] text-faint">
+          <span className="ml-auto text-[14px] text-faint">
             Step {step} of 6
           </span>
         </div>
+
+        {step === 1 && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-card bg-accent-soft p-4"><p className="text-[15px] text-muted">Here for flashcards, quizzes or notebooks?</p><Button onClick={finish} loading={updateProfile.isPending}>Explore study tools first</Button></div>}
 
         <div className="mt-5 flex gap-1" aria-hidden>
           {STEPS.map((item, index) => (
@@ -171,7 +173,7 @@ export function Onboarding() {
         </div>
 
         <div className="mt-6">
-          <p className="text-[12px] font-medium text-accent">{STEPS[step - 1].detail}</p>
+          <p className="text-[14px] font-medium text-accent">{STEPS[step - 1].detail}</p>
           <h1 className="mt-1 text-[24px] font-semibold tracking-[-0.025em] sm:text-[28px]">{stepTitle(step)}</h1>
         </div>
 
@@ -183,7 +185,7 @@ export function Onboarding() {
                   <FieldInput value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} placeholder="Alex" autoFocus />
                 </Field>
                 <div>
-                  <p className="text-[13px] font-medium">What are you studying for?</p>
+                  <p className="text-[15px] font-medium">What are you studying for?</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {ACADEMIC_CONTEXTS.map((context) => (
                       <button
@@ -194,11 +196,11 @@ export function Onboarding() {
                           form.academicContext === context.value ? 'border-accent bg-accent-soft/60' : 'border-line hover:bg-surface-2'
                         }`}
                       >
-                        <span className="flex items-center justify-between text-[13.5px] font-medium">
+                        <span className="flex items-center justify-between text-[15px] font-medium">
                           {context.label}
                           {form.academicContext === context.value && <Check className="size-4 text-accent" />}
                         </span>
-                        <span className="mt-0.5 block text-[12px] text-muted">{context.detail}</span>
+                        <span className="mt-0.5 block text-[14px] text-muted">{context.detail}</span>
                       </button>
                     ))}
                   </div>
@@ -206,7 +208,7 @@ export function Onboarding() {
                 <Field label="What is your goal this term?" hint="Optional — a sentence is enough.">
                   <FieldTextarea value={form.learningGoal} onChange={(event) => setForm({ ...form, learningGoal: event.target.value })} className="min-h-[70px]" placeholder="Stay ahead in calculus and pass the physics midterm without cramming." />
                 </Field>
-                <div className="flex items-center gap-2 rounded-tile bg-surface-2 px-3 py-2 text-[12px] text-muted">
+                <div className="flex items-center gap-2 rounded-tile bg-surface-2 px-3 py-2 text-[14px] text-muted">
                   <Clock className="size-3.5" />
                   Times are stored in {timezone.replace(/_/g, ' ')}. You can change this later.
                 </div>
@@ -216,13 +218,13 @@ export function Onboarding() {
 
           {step === 2 && (
             <div className="flex flex-col gap-3">
-              <p className="text-[13.5px] leading-relaxed text-muted">Add each subject you are studying. The colour and difficulty help the planner balance your week.</p>
+              <p className="text-[15px] leading-relaxed text-muted">Add each subject you are studying. The colour and difficulty help the planner balance your week.</p>
               {subjects.map((subject) => (
-                <div key={subject.id} className="flex items-center gap-3 rounded-card border border-line bg-surface px-4 py-3">
+                <div key={subject.id} className="flex items-center gap-3 rounded-card border border-line bg-panel px-4 py-3">
                   <span className="round size-3 rounded-full" style={{ background: subject.color }} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-medium">{subject.name}</p>
-                    <p className="text-[12px] text-faint">
+                    <p className="text-[14px] text-faint">
                       {subject.priority} priority · difficulty {subject.difficulty}/5
                       {subject.weeklyTargetMinutes ? ` · ${subject.weeklyTargetMinutes / 60}h target` : ''}
                     </p>
@@ -236,19 +238,19 @@ export function Onboarding() {
                 <Plus />
                 Add a subject
               </Button>
-              {subjects.length === 0 && <p className="text-[12.5px] text-faint">Your study workspace starts with a subject.</p>}
+              {subjects.length === 0 && <p className="text-[14px] text-faint">Your study workspace starts with a subject.</p>}
             </div>
           )}
 
           {step === 3 && (
             <div className="flex flex-col gap-3">
-              <p className="text-[13.5px] leading-relaxed text-muted">Exams and deadlines make the plan work backwards from what matters. This step is optional.</p>
+              <p className="text-[15px] leading-relaxed text-muted">Exams and deadlines make the plan work backwards from what matters. This step is optional.</p>
               {assessments.map((assessment) => (
-                <div key={assessment.id} className="flex items-center gap-3 rounded-card border border-line bg-surface px-4 py-3">
+                <div key={assessment.id} className="flex items-center gap-3 rounded-card border border-line bg-panel px-4 py-3">
                   <span className="round size-3 rounded-full" style={{ background: assessment.subjectColor ?? '#635BFF' }} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-medium">{assessment.title}</p>
-                    <p className="text-[12px] text-faint">
+                    <p className="text-[14px] text-faint">
                       {assessment.subjectName} · {dateLabel(new Date(assessment.dueAt).toISOString().slice(0, 10), { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
@@ -267,7 +269,7 @@ export function Onboarding() {
 
           {step === 4 && (
             <div className="flex flex-col gap-4">
-              <p className="text-[13.5px] leading-relaxed text-muted">Tell Studium when you can actually study. Leave days empty when you are not available.</p>
+              <p className="text-[15px] leading-relaxed text-muted">Tell Studium when you can actually study. Leave days empty when you are not available.</p>
               <AvailabilityEditor rules={rules} onChange={setRules} />
               <Card className="grid gap-4 p-4 sm:grid-cols-3">
                 <Field label="Session length" hint="Minutes">
@@ -294,14 +296,14 @@ export function Onboarding() {
                   />
                 </Field>
               </Card>
-              <p className="text-[12.5px] text-faint">{weeklyMinutes > 0 ? `${minutesLabel(weeklyMinutes)} of availability per week.` : 'No availability yet — you can add it later in Settings.'}</p>
+              <p className="text-[14px] text-faint">{weeklyMinutes > 0 ? `${minutesLabel(weeklyMinutes)} of availability per week.` : 'No availability yet — you can add it later in Settings.'}</p>
             </div>
           )}
 
           {step === 5 && (
             <Card className="flex flex-col gap-5 p-5">
               <div>
-                <p className="text-[13px] font-medium">What matters most right now?</p>
+                <p className="text-[15px] font-medium">What matters most right now?</p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-3">
                   {[
                     { value: 'balanced', label: 'Balanced', detail: 'Steady coverage across subjects' },
@@ -316,8 +318,8 @@ export function Onboarding() {
                         planStyle.planningStyle === option.value ? 'border-accent bg-accent-soft/60' : 'border-line hover:bg-surface-2'
                       }`}
                     >
-                      <span className="block text-[13px] font-medium">{option.label}</span>
-                      <span className="mt-0.5 block text-[11.5px] leading-relaxed text-muted">{option.detail}</span>
+                      <span className="block text-[15px] font-medium">{option.label}</span>
+                      <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">{option.detail}</span>
                     </button>
                   ))}
                 </div>
@@ -345,12 +347,12 @@ export function Onboarding() {
                 <>
                   <Card className="flex flex-col gap-3 p-5">
                     <div className="flex items-center justify-between">
-                      <p className="text-[13px] font-semibold">Your study profile</p>
+                      <p className="text-[15px] font-semibold">Your study profile</p>
                       <Badge tone="accent" dot>
                         Ready
                       </Badge>
                     </div>
-                    <dl className="grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-4">
+                    <dl className="grid grid-cols-2 gap-3 text-[15px] sm:grid-cols-4">
                       {[
                         { label: 'Subjects', value: String(subjects.length) },
                         { label: 'Deadlines', value: String(assessments.length) },
@@ -358,14 +360,14 @@ export function Onboarding() {
                         { label: 'Horizon', value: `${planStyle.planningHorizonDays} days` },
                       ].map((item) => (
                         <div key={item.label}>
-                          <dt className="text-[11.5px] text-faint">{item.label}</dt>
+                          <dt className="text-[13px] text-faint">{item.label}</dt>
                           <dd className="mt-0.5 font-medium">{item.value}</dd>
                         </div>
                       ))}
                     </dl>
                     <ul className="flex flex-wrap gap-1.5">
                       {subjects.map((subject) => (
-                        <li key={subject.id} className="rounded-tile bg-surface-2 px-2 py-1 text-[11.5px]">
+                        <li key={subject.id} className="rounded-tile bg-surface-2 px-2 py-1 text-[13px]">
                           {subject.name}
                         </li>
                       ))}
@@ -380,7 +382,7 @@ export function Onboarding() {
                       Finish without a plan
                     </Button>
                   </div>
-                  <p className="text-[12px] leading-relaxed text-faint">
+                  <p className="text-[14px] leading-relaxed text-faint">
                     Your plan is a proposal until you accept it. Nothing is added to your calendar before that.
                   </p>
                 </>
@@ -421,7 +423,7 @@ export function Onboarding() {
             </Button>
           )}
           {step === 3 && (
-            <button type="button" onClick={() => saveStep(4)} className="text-[12.5px] text-muted underline-offset-2 hover:underline">
+            <button type="button" onClick={() => saveStep(4)} className="text-[14px] text-muted underline-offset-2 hover:underline">
               Skip for now
             </button>
           )}

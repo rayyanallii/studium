@@ -160,7 +160,7 @@ export function Settings() {
 
         <Card className="p-5">
           <h2 className="text-[14px] font-semibold">Study preferences</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">Defaults used whenever a plan is generated.</p>
+          <p className="mt-0.5 text-[14px] text-muted">Defaults used whenever a plan is generated.</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <Field label="Session length" hint="Minutes">
               <FieldInput type="number" min={15} max={120} step={5} value={prefs.preferredSessionMinutes} onChange={(event) => setPrefs({ ...prefs, preferredSessionMinutes: Number(event.target.value) })} />
@@ -201,14 +201,14 @@ export function Settings() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-[14px] font-semibold">Weekly availability</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted">The planner never schedules outside these windows.</p>
+              <p className="mt-0.5 text-[14px] text-muted">The planner never schedules outside these windows.</p>
             </div>
           </div>
           <div className="mt-4">
             <AvailabilityEditor rules={rules} onChange={setRules} />
           </div>
           <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-[11.5px] text-faint">Changes apply to the next plan you generate.</p>
+            <p className="text-[13px] text-faint">Changes apply to the next plan you generate.</p>
             <Button variant="primary" onClick={saveRules} loading={saveAvailability.isPending}>
               Save availability
             </Button>
@@ -217,7 +217,7 @@ export function Settings() {
 
         <Card className="p-5">
           <h2 className="text-[14px] font-semibold">Appearance</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">Saved to your account and applied everywhere.</p>
+          <p className="mt-0.5 text-[14px] text-muted">Saved to your account and applied everywhere.</p>
           <div className="mt-3 flex items-center gap-2">
             <Segmented
               value={me.preferences.theme}
@@ -237,8 +237,8 @@ export function Settings() {
           <ul className="mt-3 divide-y divide-line">
             <li className="flex items-center justify-between gap-3 py-2.5">
               <span>
-                <span className="block text-[13px] font-medium">AI planning</span>
-                <span className="block text-[11.5px] text-faint">{me.capabilities.ai ? `${me.capabilities.aiModel} via the server-side gateway` : 'No API key configured — deterministic planning only'}</span>
+                <span className="block text-[15px] font-medium">AI planning</span>
+                <span className="block text-[13px] text-faint">{me.capabilities.ai ? `${me.capabilities.aiModel} via the server-side gateway` : 'No API key configured — deterministic planning only'}</span>
               </span>
               <Badge tone={me.capabilities.ai ? 'success' : 'warning'} dot>
                 {me.capabilities.ai ? 'Connected' : 'Offline'}
@@ -246,8 +246,8 @@ export function Settings() {
             </li>
             <li className="flex items-center justify-between gap-3 py-2.5">
               <span>
-                <span className="block text-[13px] font-medium">Database</span>
-                <span className="block text-[11.5px] text-faint">Cloudflare D1</span>
+                <span className="block text-[15px] font-medium">Database</span>
+                <span className="block text-[13px] text-faint">Cloudflare D1</span>
               </span>
               <Badge tone={me.capabilities.database ? 'success' : 'danger'} dot>
                 {me.capabilities.database ? 'Connected' : 'Missing'}
@@ -255,8 +255,8 @@ export function Settings() {
             </li>
             <li className="flex items-center justify-between gap-3 py-2.5">
               <span>
-                <span className="block text-[13px] font-medium">Sign in</span>
-                <span className="block text-[11.5px] text-faint">{me.capabilities.auth !== 'development' ? (me.capabilities.auth === 'supabase' ? 'Supabase' : 'Sign in with Freebuff') : 'Local development user'}</span>
+                <span className="block text-[15px] font-medium">Sign in</span>
+                <span className="block text-[13px] text-faint">{me.capabilities.auth !== 'development' ? (me.capabilities.auth === 'supabase' ? 'Supabase' : 'Sign in with Freebuff') : 'Local development user'}</span>
               </span>
               <Badge tone={me.capabilities.auth !== 'development' ? 'success' : 'neutral'} dot>
                 {me.capabilities.auth !== 'development' ? 'Active' : 'Dev'}
@@ -267,7 +267,7 @@ export function Settings() {
 
         <Card className="p-5">
           <h2 className="text-[14px] font-semibold">Sample workspace</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">Three subjects, five tasks, three exams and a planned week. Only added when you ask.</p>
+          <p className="mt-0.5 text-[14px] text-muted">Three subjects, five tasks, three exams and a planned week. Only added when you ask.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button onClick={() => setConfirmDemo(true)} loading={seed.isPending}>
               <Sparkles />
@@ -293,7 +293,7 @@ export function Settings() {
               Delete my study data
             </Button>
           </div>
-          <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+          <p className="mt-2 text-[13px] leading-relaxed text-faint">
             Deletes every subject, task, plan, session and focus run in Studium. Your Freebuff identity is managed by your sign-in provider.
           </p>
         </Card>

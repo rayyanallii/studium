@@ -32,14 +32,14 @@ export function AvailabilityEditor({ rules, onChange }: { rules: DraftWindow[]; 
         return (
           <div key={label} className="rounded-card border border-line p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] font-medium">{label}</p>
+              <p className="text-[15px] font-medium">{label}</p>
               <Button size="sm" variant="ghost" onClick={() => add(weekday)}>
                 <Plus />
                 Add window
               </Button>
             </div>
             {windows.length === 0 ? (
-              <p className="mt-1 text-[12.5px] text-faint">Unavailable</p>
+              <p className="mt-1 text-[14px] text-faint">Unavailable</p>
             ) : (
               <div className="mt-2 flex flex-col gap-2">
                 {windows.map(({ rule, i }) => {
@@ -53,7 +53,7 @@ export function AvailabilityEditor({ rules, onChange }: { rules: DraftWindow[]; 
                         onChange={(event) => update(i, { startLocalTime: event.target.value })}
                         className={cx('w-[118px]', invalid && 'border-danger')}
                       />
-                      <span className="text-[12.5px] text-faint">to</span>
+                      <span className="text-[14px] text-faint">to</span>
                       <Input
                         type="time"
                         aria-label={`${label} end time`}
@@ -64,7 +64,7 @@ export function AvailabilityEditor({ rules, onChange }: { rules: DraftWindow[]; 
                       <Button size="icon-sm" variant="ghost" aria-label={`Remove ${label} window`} onClick={() => remove(i)}>
                         <Trash />
                       </Button>
-                      {invalid && <span className="text-[12px] text-danger">Ends before it starts</span>}
+                      {invalid && <span className="text-[14px] text-danger">Ends before it starts</span>}
                     </div>
                   )
                 })}

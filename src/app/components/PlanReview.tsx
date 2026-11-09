@@ -42,12 +42,12 @@ export function PlanReview({
           {proposal.generationSource === 'ai' ? 'AI-ranked priorities' : 'Deterministic prioritisation'}
         </Badge>
         <Badge tone={proposal.complete ? 'success' : 'warning'}>{proposal.complete ? 'Everything fits' : 'Work left over'}</Badge>
-        <span className="text-[12.5px] text-faint">
+        <span className="text-[14px] text-faint">
           {dateLabel(proposal.startDate, { month: 'short', day: 'numeric' })} – {dateLabel(proposal.endDate, { month: 'short', day: 'numeric' })}
         </span>
       </div>
 
-      <p className="text-[13.5px] leading-relaxed text-muted">{proposal.explanation || proposal.summary}</p>
+      <p className="text-[15px] leading-relaxed text-muted">{proposal.explanation || proposal.summary}</p>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
@@ -57,7 +57,7 @@ export function PlanReview({
           { label: 'Unscheduled', value: minutesLabel(proposal.totals.unscheduledMinutes) },
         ].map((item) => (
           <div key={item.label} className="rounded-card border border-line px-3 py-2.5">
-            <p className="text-[11.5px] text-faint">{item.label}</p>
+            <p className="text-[15px] text-faint">{item.label}</p>
             <p className="mt-0.5 text-[15px] font-semibold tabular">{item.value}</p>
           </div>
         ))}
@@ -65,11 +65,11 @@ export function PlanReview({
 
       {proposal.allocations.length > 0 && (
         <Card className="p-4">
-          <p className="text-[13px] font-semibold">Subject balance</p>
+          <p className="text-[15px] font-semibold">Subject balance</p>
           <div className="mt-3 flex flex-col gap-2.5">
             {proposal.allocations.map((allocation) => (
               <div key={allocation.subjectId}>
-                <div className="flex items-center justify-between text-[12.5px]">
+                <div className="flex items-center justify-between text-[14px]">
                   <span className="inline-flex items-center gap-2">
                     <span className="round size-2 rounded-full" style={{ background: allocation.color }} />
                     {allocation.subjectName}
@@ -97,20 +97,20 @@ export function PlanReview({
 
       {proposal.unscheduled.length > 0 && (
         <Card className="p-4">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold">
+          <p className="flex items-center gap-1.5 text-[15px] font-semibold">
             <TriangleExclamationPoint className="size-4 text-warning" />
             Work that did not fit
           </p>
           <ul className="mt-2 divide-y divide-line">
             {proposal.unscheduled.map((item) => (
-              <li key={item.taskId} className="flex items-center justify-between gap-3 py-2 text-[13px]">
+              <li key={item.taskId} className="flex items-center justify-between gap-3 py-2 text-[15px]">
                 <span className="min-w-0 truncate">{item.title}</span>
                 <span className="shrink-0 tabular text-faint">{minutesLabel(item.minutes)}</span>
               </li>
             ))}
           </ul>
           {proposal.suggestions.length > 0 && (
-            <ul className="mt-2 list-disc space-y-1 pl-4 text-[12.5px] text-muted">
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-[14px] text-muted">
               {proposal.suggestions.map((suggestion) => (
                 <li key={suggestion}>{suggestion}</li>
               ))}
@@ -123,16 +123,16 @@ export function PlanReview({
         <div className="flex flex-col gap-3">
           {groups.map(([date, sessions]) => (
             <div key={date}>
-              <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-faint">{dateLabel(date, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+              <p className="text-[14px] font-medium uppercase tracking-[0.1em] text-faint">{dateLabel(date, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
               <div className="mt-2 flex flex-col gap-1.5">
                 {sessions.map((session) => (
-                  <div key={session.key} className="flex items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5">
+                  <div key={session.key} className="flex items-center gap-3 rounded-card border border-line bg-panel px-3 py-2.5">
                     <span className={cx('h-8 w-1 shrink-0 rounded-full')} style={{ background: proposal.allocations.find((a) => a.subjectId === session.subjectId)?.color ?? 'var(--color-accent)' }} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium">{session.title}</p>
-                      <p className="text-[11.5px] text-faint">{timeRange(session.startsAt, session.endsAt, timezone)}</p>
+                      <p className="truncate text-[15px] font-medium">{session.title}</p>
+                      <p className="text-[15px] text-faint">{timeRange(session.startsAt, session.endsAt, timezone)}</p>
                     </div>
-                    <span className="shrink-0 rounded-tile bg-surface-2 px-2 py-1 text-[11.5px] tabular text-muted">{minutesLabel(session.plannedMinutes)}</span>
+                    <span className="shrink-0 rounded-tile bg-surface-2 px-2 py-1 text-[15px] tabular text-muted">{minutesLabel(session.plannedMinutes)}</span>
                   </div>
                 ))}
               </div>
@@ -155,7 +155,7 @@ export function PlanReview({
         </div>
       )}
 
-      <div className="flex items-start gap-2 text-[11.5px] leading-relaxed text-faint">
+      <div className="flex items-start gap-2 text-[15px] leading-relaxed text-faint">
         <Sparkles className="mt-0.5 size-3.5 shrink-0" />
         <span>
           Recommendations ranked the work; Studium&apos;s scheduler placed every session inside your availability and daily limit.

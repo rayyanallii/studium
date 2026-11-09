@@ -10,6 +10,7 @@ import { SessionDetails } from '../components/SessionDetails'
 import { SessionCard } from '../components/SessionCard'
 import { SubjectDialog } from '../components/SubjectDialog'
 import { TaskDialog } from '../components/TaskDialog'
+import { StudyTools } from '../components/StudyTools'
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, Skeleton, Stat } from '../components/ui'
 import { useDashboard, useMe } from '../lib/api'
 import { dateLabel, minutesLabel, percent, untilLabel } from '../lib/format'
@@ -51,7 +52,7 @@ export function Dashboard() {
     <div className="flex flex-col gap-7">
       <PageHeader
         title={`${greeting}, ${data.greetingName}`}
-        subtitle="A little structure. More room to learn."
+        subtitle="What would you like to learn today?"
         actions={
           data.nextSession ? (
             <Button variant="primary" onClick={() => navigate(`/focus?session=${data.nextSession!.id}`)}>
@@ -66,6 +67,8 @@ export function Dashboard() {
           )
         }
       />
+
+      <StudyTools />
 
       {data.needsAttention.missedSessions > 0 && (
         <Alert
@@ -89,16 +92,16 @@ export function Dashboard() {
         <Stat label="Week completion" value={`${data.week.completionRate}%`} hint={`${data.week.completedSessions} of ${data.week.plannedSessions} sessions`} icon={<Target />} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <Card className="p-4 sm:p-6">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-[16px] font-semibold">Today&apos;s schedule</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted">
+              <p className="mt-0.5 text-[14px] text-muted">
                 {todayPlanned > 0 ? `${minutesLabel(todayCompleted)} of ${minutesLabel(todayPlanned)} done` : 'No sessions planned yet'}
               </p>
             </div>
-            <Link to="/planner" className="text-[12.5px] font-medium text-accent hover:underline">
+            <Link to="/planner" className="text-[14px] font-medium text-accent hover:underline">
               Open planner
             </Link>
           </div>
@@ -165,26 +168,26 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[11.5px] text-faint">Solid bars are confirmed study time; the pale track is what was planned.</p>
+            <p className="mt-3 text-[13px] text-faint">Solid bars are confirmed study time; the pale track is what was planned.</p>
           </Card>
 
           <Card className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-semibold">Upcoming deadlines</h2>
-              <Link to="/subjects" className="text-[12.5px] font-medium text-accent hover:underline">
+              <Link to="/subjects" className="text-[14px] font-medium text-accent hover:underline">
                 Manage
               </Link>
             </div>
             {data.deadlines.length === 0 ? (
-              <p className="mt-3 text-[12.5px] text-muted">No assessments coming up.</p>
+              <p className="mt-3 text-[14px] text-muted">No assessments coming up.</p>
             ) : (
               <ul className="mt-3 flex flex-col gap-2.5">
                 {data.deadlines.map((deadline) => (
                   <li key={deadline.id} className="flex items-center gap-2.5">
                     <span className="round size-2 shrink-0 rounded-full" style={{ background: deadline.subjectColor ?? '#635BFF' }} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-medium">{deadline.title}</span>
-                      <span className="block text-[11.5px] text-faint">{deadline.subjectName}</span>
+                      <span className="block truncate text-[15px] font-medium">{deadline.title}</span>
+                      <span className="block text-[13px] text-faint">{deadline.subjectName}</span>
                     </span>
                     <span className="shrink-0 rounded-tile bg-warning-soft px-2 py-1 text-[11px] font-medium text-warning">{untilLabel(deadline.dueAt)}</span>
                   </li>
@@ -195,16 +198,16 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_0.72fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)]">
         <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-[14px] font-semibold">Subject progress</h2>
-            <Link to="/analytics" className="text-[12.5px] font-medium text-accent hover:underline">
+            <Link to="/analytics" className="text-[14px] font-medium text-accent hover:underline">
               Analytics
             </Link>
           </div>
           {data.subjects.length === 0 ? (
-            <p className="mt-3 text-[12.5px] text-muted">Add a subject to start tracking progress.</p>
+            <p className="mt-3 text-[14px] text-muted">Add a subject to start tracking progress.</p>
           ) : (
             <ul className="mt-4 flex flex-col gap-3.5">
               {data.subjects.map((subject) => {
@@ -212,7 +215,7 @@ export function Dashboard() {
                 const value = percent(subject.studiedWeekMinutes, goal)
                 return (
                   <li key={subject.id}>
-                    <div className="flex items-center justify-between gap-3 text-[12.5px]">
+                    <div className="flex items-center justify-between gap-3 text-[14px]">
                       <span className="inline-flex min-w-0 items-center gap-2">
                         <span className="round size-2 shrink-0 rounded-full" style={{ background: subject.color }} />
                         <span className="truncate font-medium">{subject.name}</span>
@@ -249,12 +252,12 @@ export function Dashboard() {
                 className="flex flex-col items-start gap-2 rounded-card border border-line px-3 py-3 text-left transition-colors hover:border-accent/40 hover:bg-accent-soft/40 disabled:pointer-events-none disabled:opacity-50"
               >
                 <action.icon className="size-4 text-accent" />
-                <span className="text-[12.5px] font-medium">{action.label}</span>
+                <span className="text-[14px] font-medium">{action.label}</span>
               </button>
             ))}
           </div>
           {!data.needsAttention.hasActivePlan && hasSubjects && (
-            <p className="mt-3 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-faint">
+            <p className="mt-3 flex items-start gap-1.5 text-[13px] leading-relaxed text-faint">
               <CircleCheck className="mt-0.5 size-3.5 shrink-0" />
               No active plan yet. Generating one creates a proposal you can review first.
             </p>

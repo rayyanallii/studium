@@ -172,6 +172,33 @@ const SCHEMA = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS usage_request ON ai_generation_usage(owner_sub, request_id)`,
   `CREATE INDEX IF NOT EXISTS usage_owner ON ai_generation_usage(owner_sub, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS study_materials (
+    id TEXT PRIMARY KEY, owner_sub TEXT NOT NULL, title TEXT NOT NULL,
+    file_name TEXT, mime TEXT NOT NULL, bytes INTEGER NOT NULL DEFAULT 0,
+    object_key TEXT, extracted_text TEXT NOT NULL, created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS materials_owner ON study_materials(owner_sub, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS study_artifacts (
+    id TEXT PRIMARY KEY, owner_sub TEXT NOT NULL, title TEXT NOT NULL,
+    kind TEXT NOT NULL, source_ids TEXT NOT NULL, content TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS artifacts_owner ON study_artifacts(owner_sub, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS flashcard_reviews (
+    artifact_id TEXT NOT NULL, owner_sub TEXT NOT NULL, card_index INTEGER NOT NULL,
+    learned INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+    PRIMARY KEY (artifact_id, owner_sub, card_index)
+  )`,
+  `CREATE TABLE IF NOT EXISTS notebook_messages (
+    id TEXT PRIMARY KEY, artifact_id TEXT NOT NULL, owner_sub TEXT NOT NULL,
+    question TEXT NOT NULL, answer TEXT NOT NULL, citations TEXT NOT NULL, created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS messages_artifact ON notebook_messages(owner_sub, artifact_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS quiz_attempts (
+    id TEXT PRIMARY KEY, artifact_id TEXT NOT NULL, owner_sub TEXT NOT NULL,
+    answers TEXT NOT NULL, score INTEGER NOT NULL, total INTEGER NOT NULL, created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS attempts_artifact ON quiz_attempts(owner_sub, artifact_id, created_at)`,
 ]
 
 let ready: Promise<void> | undefined

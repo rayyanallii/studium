@@ -58,7 +58,7 @@ export function SubjectDetail() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link to="/subjects" className="inline-flex w-fit items-center gap-1.5 text-[13px] text-muted hover:text-fg">
+      <Link to="/subjects" className="inline-flex w-fit items-center gap-1.5 text-[15px] text-muted hover:text-fg">
         <ArrowLeft className="size-4" />
         Subjects
       </Link>
@@ -84,7 +84,7 @@ export function SubjectDetail() {
         <Badge tone={subject.priority === 'high' ? 'danger' : subject.priority === 'medium' ? 'warning' : 'neutral'}>{subject.priority} priority</Badge>
         <Badge tone="neutral">Difficulty {subject.difficulty}/5</Badge>
         {subject.weeklyTargetMinutes && <Badge tone="accent">{minutesLabel(subject.weeklyTargetMinutes)} weekly target</Badge>}
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-faint">
+        <span className="inline-flex items-center gap-1.5 text-[14px] text-faint">
           <span className="round size-2 rounded-full" style={{ background: subject.color }} />
           Subject colour
         </span>
@@ -98,7 +98,7 @@ export function SubjectDetail() {
           { label: 'Open tasks', value: String(openTasks.length) },
         ].map((stat) => (
           <Card key={stat.label} className="p-4">
-            <p className="text-[11.5px] text-faint">{stat.label}</p>
+            <p className="text-[13px] text-faint">{stat.label}</p>
             <p className="mt-1 text-[20px] font-semibold tabular">{stat.value}</p>
           </Card>
         ))}
@@ -134,14 +134,14 @@ export function SubjectDetail() {
               </Button>
             </div>
             {assessments.length === 0 ? (
-              <p className="mt-3 text-[12.5px] text-muted">No exams or deadlines yet.</p>
+              <p className="mt-3 text-[14px] text-muted">No exams or deadlines yet.</p>
             ) : (
               <ul className="mt-3 flex flex-col gap-2.5">
                 {assessments.map((assessment) => (
                   <li key={assessment.id} className="flex items-center justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium">{assessment.title}</span>
-                      <span className="block text-[11.5px] text-faint">{dateLabel(new Date(assessment.dueAt).toISOString().slice(0, 10), { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      <span className="block truncate text-[15px] font-medium">{assessment.title}</span>
+                      <span className="block text-[13px] text-faint">{dateLabel(new Date(assessment.dueAt).toISOString().slice(0, 10), { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                     </span>
                     <Badge tone={assessment.dueAt < Date.now() ? 'neutral' : 'warning'}>{untilLabel(assessment.dueAt)}</Badge>
                   </li>
@@ -159,14 +159,14 @@ export function SubjectDetail() {
               </Button>
             </div>
             {topics.length === 0 ? (
-              <p className="mt-3 text-[12.5px] text-muted">Break the subject into topics to keep tasks focused.</p>
+              <p className="mt-3 text-[14px] text-muted">Break the subject into topics to keep tasks focused.</p>
             ) : (
               <ul className="mt-3 flex flex-col gap-1.5">
                 {topics.map((topic) => (
                   <li key={topic.id} className="group flex items-center gap-2 rounded-tile px-1 py-1.5 hover:bg-surface-2">
                     <span className={cx('round size-2 shrink-0 rounded-full', topic.status === 'completed' ? 'bg-success' : topic.status === 'in_progress' ? 'bg-warning' : 'bg-raised')} />
                     <button type="button" onClick={() => setTopicDialog({ topic })} className="min-w-0 flex-1 text-left">
-                      <span className={cx('block truncate text-[13px]', topic.status === 'completed' && 'text-muted line-through')}>{topic.name}</span>
+                      <span className={cx('block truncate text-[15px]', topic.status === 'completed' && 'text-muted line-through')}>{topic.name}</span>
                       {topic.estimatedMinutes ? <span className="block text-[11px] text-faint">{minutesLabel(topic.estimatedMinutes)}</span> : null}
                     </button>
                     <button type="button" aria-label={`Delete ${topic.name}`} onClick={() => setRemoveTopic(topic)} className="text-faint opacity-0 transition-opacity hover:text-danger group-hover:opacity-100">
@@ -183,7 +183,7 @@ export function SubjectDetail() {
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-[14px] font-semibold">Recent sessions</h2>
-          <span className="text-[12px] text-faint">{analytics?.totals.completed ?? 0} completed in 30 days</span>
+          <span className="text-[14px] text-faint">{analytics?.totals.completed ?? 0} completed in 30 days</span>
         </div>
         {analytics && analytics.recent.length > 0 ? (
           <div className="mt-3 flex flex-col gap-2">
@@ -192,7 +192,7 @@ export function SubjectDetail() {
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-[12.5px] text-muted">No study sessions recorded for this subject yet.</p>
+          <p className="mt-3 text-[14px] text-muted">No study sessions recorded for this subject yet.</p>
         )}
       </Card>
 

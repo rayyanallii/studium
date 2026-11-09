@@ -30,7 +30,7 @@ export function Analytics() {
     planned: day.planned,
   }))
   const maxSubject = Math.max(1, ...data.subjects.map((subject) => subject.minutes))
-  const chartStyle = { background: 'var(--color-surface)', border: '1px solid var(--color-line)', borderRadius: 12, fontSize: 12 }
+  const chartStyle = { background: 'var(--color-panel)', border: '1px solid var(--color-line)', borderRadius: 12, fontSize: 12 }
 
   return (
     <div className="flex flex-col gap-5">
@@ -69,7 +69,7 @@ export function Analytics() {
           <Card className="p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[14px] font-semibold">Daily study minutes</h2>
-              <div className="flex items-center gap-3 text-[11.5px] text-faint">
+              <div className="flex items-center gap-3 text-[13px] text-faint">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="size-2 rounded-sm bg-accent" /> Actual
                 </span>
@@ -96,7 +96,7 @@ export function Analytics() {
             <Card className="p-4 sm:p-5">
               <h2 className="text-[14px] font-semibold">Subject distribution</h2>
               {data.subjects.length === 0 ? (
-                <p className="mt-3 text-[12.5px] text-muted">No subject activity in this period.</p>
+                <p className="mt-3 text-[14px] text-muted">No subject activity in this period.</p>
               ) : (
                 <div className="mt-3 grid items-center gap-4 sm:grid-cols-[180px_1fr]">
                   <div className="h-[180px]">
@@ -114,7 +114,7 @@ export function Analytics() {
                   <ul className="flex flex-col gap-2.5">
                     {data.subjects.map((subject) => (
                       <li key={subject.id}>
-                        <div className="flex items-center justify-between gap-2 text-[12.5px]">
+                        <div className="flex items-center justify-between gap-2 text-[14px]">
                           <span className="inline-flex min-w-0 items-center gap-2">
                             <span className="round size-2 shrink-0 rounded-full" style={{ background: subject.color }} />
                             <span className="truncate">{subject.name}</span>
@@ -136,16 +136,16 @@ export function Analytics() {
               <Card className="p-4 sm:p-5">
                 <h2 className="text-[14px] font-semibold">Plan adherence</h2>
                 <p className="mt-3 text-[26px] font-semibold tabular">{data.totals.completionRate}%</p>
-                <p className="text-[12px] text-muted">of sessions that have ended were completed</p>
+                <p className="text-[14px] text-muted">of sessions that have ended were completed</p>
                 <Progress value={data.totals.completionRate} className="mt-3" tone={data.totals.completionRate >= 70 ? 'success' : 'warning'} />
-                <p className="mt-2 text-[11.5px] text-faint">
+                <p className="mt-2 text-[13px] text-faint">
                   {data.totals.completedSessions} completed of {data.totals.eligibleSessions} eligible sessions.
                 </p>
               </Card>
 
               <Card className="p-4 sm:p-5">
                 <h2 className="text-[14px] font-semibold">Tasks</h2>
-                <ul className="mt-3 flex flex-col gap-2.5 text-[13px]">
+                <ul className="mt-3 flex flex-col gap-2.5 text-[15px]">
                   <li className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-2 text-muted">
                       <CircleCheck className="size-4 text-success" /> Completed

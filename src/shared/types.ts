@@ -2,7 +2,7 @@
 // Every API payload in this file is the single contract between the two.
 
 export const BRAND = 'Studium'
-export const TAGLINE = 'Plan smarter. Study better.'
+export const TAGLINE = 'Understand. Practice. Remember.'
 
 export type AcademicContext = 'school' | 'university' | 'competitive' | 'self' | 'other'
 export type Priority = 'low' | 'medium' | 'high'

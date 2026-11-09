@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import type { AppContext } from '../env'
 import { aiModel, aiKey } from '../env'
-import { num, one } from '../db'
+import { num, one, many } from '../db'
 import { dayBounds, isValidTimezone, localDate } from '../lib/dates'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { ensureProfile, mapPreferences, mapProfile } from '../lib/rows'
@@ -145,7 +145,10 @@ profile.delete('/account', async (c) => {
   if (c.req.query('confirm') !== 'delete') {
     return fail(c, 400, 'confirmation_required', 'Account deletion needs an explicit confirmation.')
   }
+  const files = await many<{ object_key: string }>(db, 'SELECT object_key FROM study_materials WHERE owner_sub = ? AND object_key IS NOT NULL', user.sub)
+  if (c.env.FILES && files.length) await c.env.FILES.delete(files.map(file => file.object_key))
   await db.batch([
+    ...['flashcard_reviews', 'notebook_messages', 'quiz_attempts', 'study_artifacts', 'study_materials'].map(table => db.prepare(`DELETE FROM ${table} WHERE owner_sub = ?`).bind(user.sub)),
     db.prepare('DELETE FROM focus_runs WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM study_sessions WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM study_plans WHERE owner_sub = ?').bind(user.sub),

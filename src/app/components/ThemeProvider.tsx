@@ -1,3 +1,4 @@
+import { Theme as FrostTheme } from 'frosted-ui'
 import { Moon, Sun } from 'lucide-react'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
@@ -41,6 +42,8 @@ export function ThemeProvider({ preference, onChange, children }: { preference: 
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolved
+    document.documentElement.classList.remove('light', 'dark')
+    document.documentElement.classList.add(resolved)
     try {
       localStorage.setItem('studium-theme', theme)
     } catch {
@@ -60,7 +63,7 @@ export function ThemeProvider({ preference, onChange, children }: { preference: 
     [theme, resolved, onChange],
   )
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  return <ThemeContext.Provider value={value}><FrostTheme appearance="inherit" hasBackground={false} accentColor="blue" grayColor="gray" style={{ minHeight: '100vh', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>{children}</FrostTheme></ThemeContext.Provider>
 }
 
 export const useTheme = () => useContext(ThemeContext)
@@ -74,7 +77,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => setTheme(dark ? 'light' : 'dark')}
       aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className={cx('grid size-9 shrink-0 place-items-center rounded-control border border-line bg-surface text-muted transition-colors hover:text-fg', className)}
+      className={cx('grid size-9 shrink-0 place-items-center rounded-control border border-line bg-panel text-muted transition-colors hover:text-fg', className)}
     >
       {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>

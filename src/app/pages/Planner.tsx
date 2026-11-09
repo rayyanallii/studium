@@ -150,7 +150,7 @@ export function Planner() {
       )}
 
       {data && sessions.length > 0 && (
-        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-[12px] text-muted">
+        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-[14px] text-muted">
           <span>
             <span className="font-medium text-fg">{minutesLabel(data.totals.plannedMinutes)}</span> planned
           </span>
@@ -241,7 +241,7 @@ function CalendarGrid({
                           top: Math.max(0, top),
                           height,
                           borderLeftColor: session.subjectColor,
-                          background: `color-mix(in srgb, ${session.subjectColor} ${done ? 10 : 16}%, var(--color-surface))`,
+                          background: `color-mix(in srgb, ${session.subjectColor} ${done ? 10 : 16}%, var(--color-panel))`,
                         }}
                       >
                         <span className={cx('block truncate text-[10.5px] font-semibold leading-tight', done && 'line-through')} style={{ color: session.subjectColor }}>
@@ -351,7 +351,7 @@ function NewSessionDialog({ onClose, timezone, defaultDate, onSaved }: { onClose
             <FieldInput type="time" value={form.end} onChange={(event) => setForm({ ...form, end: event.target.value })} />
           </Field>
         </div>
-        {error && <p className="text-[12.5px] text-danger">{error.message}</p>}
+        {error && <p className="text-[14px] text-danger">{error.message}</p>}
       </div>
     </Dialog>
   )

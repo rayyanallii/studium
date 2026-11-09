@@ -103,7 +103,7 @@ export function AssessmentDialog({ open, onClose, assessment, defaultSubjectId }
         <Field label="Notes" hint="Optional.">
           <FieldTextarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-[70px]" />
         </Field>
-        {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
+        {save.error && <p className="text-[15px] text-danger">{save.error.message}</p>}
       </div>
     </Dialog>
   )

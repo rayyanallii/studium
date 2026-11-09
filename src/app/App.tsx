@@ -20,6 +20,8 @@ const Analytics = lazy(() => import('./pages/Analytics').then(module => ({ defau
 const Planner = lazy(() => import('./pages/Planner').then(module => ({ default: module.Planner })))
 const Focus = lazy(() => import('./pages/Focus').then(module => ({ default: module.Focus })))
 const Settings = lazy(() => import('./pages/Settings').then(module => ({ default: module.Settings })))
+const StudyLibrary = lazy(() => import('./pages/StudyLibrary').then(module => ({ default: module.StudyLibrary })))
+const StudySet = lazy(() => import('./pages/StudySet').then(module => ({ default: module.StudySet })))
 
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 } },
@@ -41,10 +43,10 @@ function Splash() {
 function SetupNeeded({ message }: { message: string }) {
   return (
     <div className="grid min-h-screen place-items-center px-5">
-      <div className="w-full max-w-md rounded-card border border-line bg-surface p-6 text-center shadow-card">
+      <div className="w-full max-w-md rounded-card border border-line bg-panel p-6 text-center shadow-card">
         <h1 className="text-[18px] font-semibold">Storage is not connected</h1>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{message}</p>
-        <p className="mt-4 text-[12.5px] text-faint">Attach a D1 database named DB, then reload.</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-muted">{message}</p>
+        <p className="mt-4 text-[14px] text-faint">Attach a D1 database named DB, then reload.</p>
       </div>
     </div>
   )
@@ -65,6 +67,11 @@ function AppRoutes() {
     <Routes>
       <Route element={<Shell />}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/library" element={<StudyLibrary />} />
+        <Route path="/flashcards" element={<StudyLibrary key="flashcards" kind="flashcards" />} />
+        <Route path="/quizzes" element={<StudyLibrary key="quiz" kind="quiz" />} />
+        <Route path="/notebooks" element={<StudyLibrary key="notebook" kind="notebook" />} />
+        <Route path="/study/:id" element={<StudySet />} />
         <Route path="/planner" element={<Planner />} />
         <Route path="/subjects" element={<Subjects />} />
         <Route path="/subjects/:id" element={<SubjectDetail />} />

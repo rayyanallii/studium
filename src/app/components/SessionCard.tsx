@@ -40,15 +40,15 @@ export function SessionCard({
   return (
     <div
       className={cx(
-        'group flex items-center gap-3 rounded-card border bg-surface px-3 py-2.5 transition-colors',
+        'group flex items-center gap-3 rounded-card border bg-panel px-3 py-2.5 transition-colors',
         done ? 'border-success/25 bg-success-soft/30' : 'border-line hover:border-line-strong',
         compact && 'px-3 py-2',
       )}
     >
       <span className="h-9 w-1 shrink-0 rounded-full" style={{ background: session.subjectColor }} />
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
-        <span className="block truncate text-[13.5px] font-medium">{session.title}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-faint">
+        <span className="block truncate text-[15px] font-medium">{session.title}</span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] text-faint">
           <span>{session.subjectName}</span>
           <span aria-hidden>·</span>
           <span className="inline-flex items-center gap-1">

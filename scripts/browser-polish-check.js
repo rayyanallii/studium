@@ -8,9 +8,10 @@ async (page) => {
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill('UI verification task')
   await page.getByRole('combobox', { name: 'Subject', exact: true }).click()
   await page.getByRole('option', { name: 'Mathematics', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Title', exact: true }).focus()
   for (let index = 0; index < 15; index++) {
     await page.keyboard.press('Tab')
-    if (!await dialog.evaluate(element => element.contains(document.activeElement))) throw new Error('Dialog focus escaped')
+    await page.waitForFunction(() => !!document.activeElement?.closest('[role=dialog]'), { timeout: 2000 })
   }
   await page.getByRole('button', { name: 'Add task', exact: true }).click()
   await dialog.waitFor({ state: 'hidden' })

@@ -14,6 +14,7 @@ import { profile } from './routes/profile'
 import { sessions } from './routes/sessions'
 import { subjects, topics } from './routes/subjects'
 import { tasks } from './routes/tasks'
+import { study } from './routes/study'
 
 const app = new Hono<AppContext>()
 
@@ -32,6 +33,7 @@ api.route('/', analytics)
 api.route('/subjects', subjects)
 api.route('/topics', topics)
 api.route('/tasks', tasks)
+api.route('/study', study)
 api.route('/assessments', assessments)
 api.route('/availability', availability)
 api.route('/plans', plans)

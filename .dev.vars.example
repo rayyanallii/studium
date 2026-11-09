@@ -11,3 +11,4 @@ EXPLABS_API_KEY=
 AI_BASE_URL=https://api.experientiallabs.ai/v1
 AI_MODEL=gpt-6-luna
 AI_DAILY_LIMIT=5
+STUDY_AI_DAILY_LIMIT=30

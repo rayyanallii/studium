@@ -150,7 +150,7 @@ export function TaskDialog({ open, onClose, task, defaultSubjectId }: { open: bo
             Completing the task will remove its upcoming sessions from your plan. You can also cancel and keep them.
           </Alert>
         )}
-        {save.error && !needsConfirm && <p className="text-[13px] text-danger">{save.error.message}</p>}
+        {save.error && !needsConfirm && <p className="text-[15px] text-danger">{save.error.message}</p>}
       </div>
     </Dialog>
   )

@@ -65,7 +65,7 @@ export function SupabaseSignIn() {
         {message && <div role="status"><Alert tone="success">{message}</Alert></div>}
         <Button type="submit" variant="primary" loading={busy} className="w-full">{{ login: 'Sign in', register: 'Create account', reset: 'Send reset link', update: 'Save password' }[mode]}</Button>
       </form>
-      <div className="mt-5 flex flex-col items-center gap-2 text-[13px]">
+      <div className="mt-5 flex flex-col items-center gap-2 text-[15px]">
         {mode === 'login' ? <><Button variant="ghost" onClick={() => changeMode('reset')}>Forgot password?</Button><p className="text-muted">New to Studium? <button className="text-fg underline underline-offset-4" onClick={() => changeMode('register')}>Create an account</button></p></> : <Button variant="ghost" onClick={() => changeMode('login')}><ArrowLeft />Back to sign in</Button>}
       </div>
     </main>

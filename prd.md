@@ -1,4 +1,12 @@
 # STUDIUM
+
+> **Scope update — November 9, 2026:** Studium is an AI study workspace, not only
+> a planner. Frosted UI is the primary component library with neutral color accents
+> and light/dark themes. AI flashcards, AI quizzes, a source-grounded AI notebook,
+> and picture/PDF/DOCX uploads are now in scope. This instruction supersedes the
+> original exclusions and UI-library priority below. See
+> [the current study roadmap](docs/study-workspace-roadmap.md) for implementation
+> details, limits and prioritized future AI features.
 ## Product Requirements Document (PRD)
 **Product:** Studium — AI Study Planner  
 **Version:** 1.0 — Full MVP Specification  
@@ -172,7 +180,7 @@ These features may be considered for future versions.
 | Programming language | TypeScript |
 | Styling | Tailwind CSS v4 |
 | Primary UI components | shadcn/ui |
-| Additional UI components | HeroUI v3 |
+| Additional UI components | Frosted UI v3 |
 | UI blocks and animation components | Watermelon UI |
 | UI design patterns and components | Untitled UI React |
 | React animations | Motion for React (Framer Motion) |
@@ -322,11 +330,11 @@ Use the available free/open-source components, or properly licensed premium reso
 
 Do not assume that paid templates are freely available.
 
-### D. HeroUI — Selective Interactive Components
+### D. Frosted UI — Selective Interactive Components
 
 Website: https://heroui.com
 
-Use HeroUI v3 selectively for polished interaction-heavy components where it adds real value.
+Use Frosted UI v3 selectively for polished interaction-heavy components where it adds real value.
 
 Potential applications:
 
@@ -338,7 +346,7 @@ Potential applications:
 - Date selection
 - Interactive menu controls
 
-Do not create parallel shadcn/ui and HeroUI versions of the same component unnecessarily.
+Do not create parallel shadcn/ui and Frosted UI versions of the same component unnecessarily.
 
 Use one consistent styling and theming system.
 
@@ -384,7 +392,7 @@ Use the following selection hierarchy:
 
 1. shadcn/ui for standard application controls.
 2. Untitled UI for suitable free professional application patterns.
-3. HeroUI for selected specialized controls.
+3. Frosted UI for selected specialized controls.
 4. Watermelon UI for selected animated components and blocks.
 5. Motion for React for component-level animation.
 6. Anime.js for advanced decorative motion.
@@ -2465,7 +2473,7 @@ Deliverables:
 - Responsive product visuals
 - Watermelon UI component integration where suitable
 - Untitled UI patterns where suitable
-- Selective HeroUI integration
+- Selective Frosted UI integration
 - Motion animations
 - Anime.js decorative interactions
 - Dark/light theme
@@ -2532,7 +2540,7 @@ Before manually building a reusable UI component:
 
 1. Check shadcn/ui.
 2. Check relevant available Untitled UI components.
-3. Check HeroUI.
+3. Check Frosted UI.
 4. Check Watermelon UI.
 5. Determine whether the component already exists in the codebase.
 6. Implement custom code only if necessary.
@@ -2651,7 +2659,7 @@ Build a production-quality application, not a prototype.
 
 Use Next.js, React, TypeScript, Tailwind CSS, Supabase, and OpenAI as the core stack.
 
-Use shadcn/ui as the primary UI system. Actively consult Watermelon UI, Untitled UI React, and HeroUI for suitable existing components and application patterns. Use Motion for React (Framer Motion) and Anime.js for carefully chosen animation requirements.
+Use shadcn/ui as the primary UI system. Actively consult Watermelon UI, Untitled UI React, and Frosted UI for suitable existing components and application patterns. Use Motion for React (Framer Motion) and Anime.js for carefully chosen animation requirements.
 
 **Do not generate common UI components from scratch when reliable library components already exist.**
 

@@ -108,7 +108,7 @@ export function SubjectDialog({ open, onClose, subject }: { open: boolean; onClo
         </div>
 
         <div>
-          <p className="text-[13px] font-medium">Difficulty</p>
+          <p className="text-[15px] font-medium">Difficulty</p>
           <div className="mt-1.5 flex gap-1.5" role="radiogroup" aria-label="Difficulty">
             {[1, 2, 3, 4, 5].map((level) => (
               <button
@@ -118,7 +118,7 @@ export function SubjectDialog({ open, onClose, subject }: { open: boolean; onClo
                 aria-checked={form.difficulty === level}
                 onClick={() => setForm({ ...form, difficulty: level })}
                 className={cx(
-                  'h-9 flex-1 rounded-control border text-[13px] font-medium transition-colors',
+                  'h-9 flex-1 rounded-control border text-[15px] font-medium transition-colors',
                   form.difficulty === level ? 'border-accent bg-accent-soft text-accent' : 'border-line-strong text-muted hover:bg-surface-2',
                 )}
               >
@@ -126,11 +126,11 @@ export function SubjectDialog({ open, onClose, subject }: { open: boolean; onClo
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[12px] text-faint">Harder subjects get more weight when the plan is built.</p>
+          <p className="mt-1 text-[14px] text-faint">Harder subjects get more weight when the plan is built.</p>
         </div>
 
         <div>
-          <p className="text-[13px] font-medium">Colour</p>
+          <p className="text-[15px] font-medium">Colour</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {SUBJECT_COLORS.map((color) => (
               <button
@@ -146,7 +146,7 @@ export function SubjectDialog({ open, onClose, subject }: { open: boolean; onClo
           </div>
         </div>
 
-        {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
+        {save.error && <p className="text-[15px] text-danger">{save.error.message}</p>}
       </div>
     </Dialog>
   )

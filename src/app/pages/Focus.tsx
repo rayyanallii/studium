@@ -113,10 +113,10 @@ export function Focus() {
         <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
           <Card className="p-5 sm:p-6">
             <h2 className="text-[16px] font-semibold">Start a focus session</h2>
-            <p className="mt-1 text-[13px] text-muted">The timer uses persisted timestamps, so it stays accurate when this tab is in the background.</p>
+            <p className="mt-1 text-[15px] text-muted">The timer uses persisted timestamps, so it stays accurate when this tab is in the background.</p>
 
             <div className="mt-5">
-              <p className="text-[13px] font-medium">Subject</p>
+              <p className="text-[15px] font-medium">Subject</p>
               <Select value={subjectId} onValueChange={(value) => setSubjectId(value)} className="mt-1.5">
                 <option value="">{todaySessions[0]?.subjectName ?? subjects?.items[0]?.name ?? 'Choose a subject'}</option>
                 {(subjects?.items ?? []).map((subject) => (
@@ -128,7 +128,7 @@ export function Focus() {
             </div>
 
             <div className="mt-4">
-              <p className="text-[13px] font-medium">Duration</p>
+              <p className="text-[15px] font-medium">Duration</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {DURATIONS.map((duration) => (
                   <button
@@ -136,7 +136,7 @@ export function Focus() {
                     type="button"
                     onClick={() => setMinutes(duration)}
                     className={cx(
-                      'h-10 rounded-control border px-4 text-[13px] font-medium transition-colors',
+                      'h-10 rounded-control border px-4 text-[15px] font-medium transition-colors',
                       minutes === duration ? 'border-accent bg-accent-soft text-accent' : 'border-line text-muted hover:bg-surface-2',
                     )}
                   >
@@ -147,7 +147,7 @@ export function Focus() {
                   type="button"
                   onClick={() => setMinutes(0)}
                   className={cx(
-                    'h-10 rounded-control border px-4 text-[13px] font-medium transition-colors',
+                    'h-10 rounded-control border px-4 text-[15px] font-medium transition-colors',
                     minutes === 0 ? 'border-accent bg-accent-soft text-accent' : 'border-line text-muted hover:bg-surface-2',
                   )}
                 >
@@ -163,7 +163,7 @@ export function Focus() {
               <Play />
               Start {chosenMinutes}-minute session
             </Button>
-            {!(subjects?.items ?? []).length && <p className="mt-2 text-[12px] text-faint">Add a subject before starting a focus session.</p>}
+            {!(subjects?.items ?? []).length && <p className="mt-2 text-[14px] text-faint">Add a subject before starting a focus session.</p>}
           </Card>
 
           <Card className="p-5">
@@ -197,7 +197,7 @@ export function Focus() {
               <Check className="size-7" />
             </span>
             <h2 className="mt-4 text-[20px] font-semibold">Session recorded</h2>
-            <p className="mt-1 text-[13.5px] text-muted">
+            <p className="mt-1 text-[15px] text-muted">
               {minutesLabel(summary.minutes)} of focused study{summary.session ? ` on ${summary.session.subjectName}` : ''} added to your progress.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -214,7 +214,7 @@ export function Focus() {
                 Back to dashboard
               </Button>
             </div>
-            <p className="mt-4 text-[11.5px] text-faint">Break time is never counted as study time.</p>
+            <p className="mt-4 text-[13px] text-faint">Break time is never counted as study time.</p>
           </div>
         </Card>
       )}
@@ -231,7 +231,7 @@ export function Focus() {
             <Badge tone={run.status === 'running' ? 'accent' : 'warning'} dot>
               {run.status === 'running' ? 'Focusing' : 'Paused'}
             </Badge>
-            <p className="mt-3 text-[13px] text-muted">{run.subjectName ?? 'Focus session'}</p>
+            <p className="mt-3 text-[15px] text-muted">{run.subjectName ?? 'Focus session'}</p>
             <h2 className="mt-0.5 max-w-full truncate text-[15px] font-medium">{run.sessionTitle ?? 'Standalone session'}</h2>
 
             <div className="relative mt-6 grid place-items-center">
@@ -254,7 +254,7 @@ export function Focus() {
                 <span className="text-[42px] font-semibold leading-none tabular">
                   {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}
                 </span>
-                <span className="mt-1 text-[12px] text-faint">{minutesLabel(Math.floor(elapsed / 60))} focused</span>
+                <span className="mt-1 text-[14px] text-faint">{minutesLabel(Math.floor(elapsed / 60))} focused</span>
               </div>
             </div>
 
@@ -275,7 +275,7 @@ export function Focus() {
                 End session
               </Button>
             </div>
-            <p className="mt-4 max-w-sm text-[11.5px] leading-relaxed text-faint">
+            <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-faint">
               Focused time is measured from saved timestamps, so pausing, switching tabs or refreshing never loses or invents minutes.
             </p>
           </div>
@@ -285,12 +285,12 @@ export function Focus() {
       {run && finishing && (
         <Card className="fixed inset-x-3 bottom-3 z-50 p-5 shadow-dialog sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:w-[430px] sm:-translate-x-1/2 sm:-translate-y-1/2">
           <h3 className="text-[15px] font-semibold">Finish this session?</h3>
-          <p className="mt-1 text-[13px] text-muted">
+          <p className="mt-1 text-[15px] text-muted">
             You have focused for <span className="font-medium text-fg">{minutesLabel(Math.floor(elapsed / 60))}</span>. Only confirmed time is added to your analytics.
           </p>
           <label className="mt-4 flex items-start gap-2.5 rounded-tile bg-surface-2 p-3">
             <Checkbox checked={markComplete} onChange={setMarkComplete} className="mt-0.5" />
-            <span className="text-[12.5px] leading-relaxed">Mark the planned study session as completed too.</span>
+            <span className="text-[14px] leading-relaxed">Mark the planned study session as completed too.</span>
           </label>
           <div className="mt-4 flex flex-col gap-2">
             <Button variant="primary" className="h-10" onClick={() => finish(true)} loading={focusAction.isPending} disabled={Math.floor(elapsed / 60) === 0}>

@@ -23,7 +23,7 @@ export function SignIn() {
 
       <main className="mx-auto grid w-full max-w-[1100px] flex-1 items-center gap-12 px-5 pb-16 sm:px-8 lg:grid-cols-[1fr_0.9fr]">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="max-w-md">
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[12px] font-medium text-muted">
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-[14px] font-medium text-muted">
             <Sparkles className="size-3.5 text-accent" />
             {TAGLINE}
           </p>
@@ -41,7 +41,7 @@ export function SignIn() {
             Continue with Freebuff
             <ArrowRight className="size-4" />
           </a>
-          <p className="mt-4 text-[12.5px] leading-relaxed text-faint">
+          <p className="mt-4 text-[14px] leading-relaxed text-faint">
             Uses your Freebuff account, so there is no new password to remember. Everything in Studium stays scoped to you.
           </p>
         </motion.div>
@@ -52,10 +52,10 @@ export function SignIn() {
           transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto hidden w-full max-w-[420px] lg:block"
         >
-          <div className="rounded-[22px] border border-line bg-surface p-5 shadow-float">
+          <div className="rounded-[22px] border border-line bg-panel p-5 shadow-float">
             <div className="flex items-center justify-between">
-              <p className="text-[13px] font-semibold">This week</p>
-              <span className="rounded-tile bg-success-soft px-2 py-1 text-[11.5px] font-medium text-success">On track</span>
+              <p className="text-[15px] font-semibold">This week</p>
+              <span className="rounded-tile bg-success-soft px-2 py-1 text-[13px] font-medium text-success">On track</span>
             </div>
             <div className="mt-4 space-y-2.5">
               {[
@@ -68,8 +68,8 @@ export function SignIn() {
                     <item.icon className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium">{item.title}</span>
-                    <span className="block text-[11.5px] text-faint">{item.detail}</span>
+                    <span className="block truncate text-[15px] font-medium">{item.title}</span>
+                    <span className="block text-[13px] text-faint">{item.detail}</span>
                   </span>
                 </div>
               ))}

@@ -107,8 +107,8 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
         <div className="flex flex-col gap-5">
           {generate.isPending && (
             <div>
-              <p className="text-[13px] font-medium">Creating your study plan…</p>
-              <p className="mt-0.5 text-[12px] text-muted">
+              <p className="text-[15px] font-medium">Creating your study plan…</p>
+              <p className="mt-0.5 text-[14px] text-muted">
                 {options.useAi
                   ? 'Ranking your work with AI, then fitting it into real calendar slots.'
                   : 'Fitting your work into real calendar slots.'}
@@ -118,7 +118,7 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
           )}
 
           <div>
-            <p className="text-[13px] font-medium">Planning emphasis</p>
+            <p className="text-[15px] font-medium">Planning emphasis</p>
             <Segmented
               className="mt-2 w-full"
               value={options.planningStyle}
@@ -132,7 +132,7 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
           </div>
 
           <div>
-            <p className="text-[13px] font-medium">Horizon</p>
+            <p className="text-[15px] font-medium">Horizon</p>
             <Segmented
               className="mt-2 w-full"
               value={String(options.horizonDays) as '7' | '10' | '14' | '21'}
@@ -148,10 +148,10 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
 
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-[13px] font-medium">Subjects</p>
+              <p className="text-[15px] font-medium">Subjects</p>
               <button
                 type="button"
-                className="text-[12px] text-accent hover:underline"
+                className="text-[14px] text-accent hover:underline"
                 onClick={() => setOptions({ ...options, subjectIds: options.subjectIds.length === 0 ? (subjects?.items ?? []).map((s) => s.id) : [] })}
               >
                 {options.subjectIds.length === 0 ? 'Select all' : 'Clear'}
@@ -173,7 +173,7 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
                       })
                     }
                     className={cx(
-                      'inline-flex h-8 items-center gap-1.5 rounded-control border px-2.5 text-[12.5px] transition-colors',
+                      'inline-flex h-8 items-center gap-1.5 rounded-control border px-2.5 text-[14px] transition-colors',
                       active ? 'border-accent/40 bg-accent-soft text-accent' : 'border-line text-muted hover:bg-surface-2',
                     )}
                   >
@@ -182,9 +182,9 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
                   </button>
                 )
               })}
-              {(subjects?.items ?? []).length === 0 && <p className="text-[12.5px] text-muted">No subjects yet.</p>}
+              {(subjects?.items ?? []).length === 0 && <p className="text-[14px] text-muted">No subjects yet.</p>}
             </div>
-            <p className="mt-1.5 text-[11.5px] text-faint">Leave everything unselected to plan across all subjects.</p>
+            <p className="mt-1.5 text-[15px] text-faint">Leave everything unselected to plan across all subjects.</p>
           </div>
 
           <div className="rounded-card border border-line px-3 py-3">
@@ -200,7 +200,7 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
             />
           </div>
 
-          <div className="rounded-tile bg-surface-2 px-3 py-2.5 text-[11.5px] leading-relaxed text-muted">
+          <div className="rounded-tile bg-surface-2 px-3 py-2.5 text-[15px] leading-relaxed text-muted">
             Considers {me?.preferences.preferredSessionMinutes ?? 50}-minute sessions, {me?.preferences.breakMinutes ?? 10}-minute breaks, a{' '}
             {Math.round((me?.preferences.maxDailyMinutes ?? 240) / 60)}h daily ceiling, your weekly availability, subject difficulty and every open deadline.
           </div>
