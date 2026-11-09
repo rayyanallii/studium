@@ -7,19 +7,93 @@ import { num, one, many } from '../db'
 import { dayBounds, isValidTimezone, localDate } from '../lib/dates'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { ensureProfile, mapPreferences, mapProfile } from '../lib/rows'
+import { ensureWorkspace, findWorkspace, toWorkspaceError, workspaceClient } from '../lib/pg'
 import { ACADEMIC_CONTEXTS } from '../../shared/types'
-import type { Me } from '../../shared/types'
+import type { Me, Preferences, Profile } from '../../shared/types'
 import { authMode } from '../auth'
 
+// Identity and study preferences live in Postgres (profiles, study_preferences).
+// Everything else still lives in D1, so the counts below stay on D1 until those
+// domains are ported — one source of truth per record, never two.
+
 export const profile = new Hono<AppContext>()
+
+interface ProfileRow {
+  display_name: string
+  academic_context: string | null
+  learning_goal: string | null
+  timezone: string
+  onboarding_step: number
+  onboarding_completed: boolean
+}
+
+interface PrefsRow {
+  preferred_session_minutes: number
+  break_minutes: number
+  max_daily_minutes: number
+  planning_horizon_days: number
+  planning_style: string
+  theme: string
+  urgent_first: boolean
+}
+
+const PROFILE_COLUMNS = 'display_name, academic_context, learning_goal, timezone, onboarding_step, onboarding_completed'
+
+function mapPgProfile(row: ProfileRow | null): Profile {
+  return {
+    displayName: row?.display_name ?? 'Student',
+    academicContext: (row?.academic_context as Profile['academicContext']) ?? null,
+    learningGoal: row?.learning_goal ?? null,
+    timezone: row?.timezone ?? 'UTC',
+    onboardingCompleted: row?.onboarding_completed ?? false,
+    onboardingStep: row?.onboarding_step ?? 1,
+  }
+}
+
+function mapPgPreferences(row: PrefsRow | null): Preferences {
+  return {
+    preferredSessionMinutes: row?.preferred_session_minutes ?? 50,
+    breakMinutes: row?.break_minutes ?? 10,
+    maxDailyMinutes: row?.max_daily_minutes ?? 240,
+    planningHorizonDays: row?.planning_horizon_days ?? 7,
+    planningStyle: (['balanced', 'deadline', 'difficult'].includes(row?.planning_style ?? '') ? row!.planning_style : 'balanced') as Preferences['planningStyle'],
+    theme: (['light', 'dark', 'system'].includes(row?.theme ?? '') ? row!.theme : 'dark') as Preferences['theme'],
+    urgentFirst: row?.urgent_first ?? false,
+  }
+}
 
 profile.get('/me', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
-  const { profile: row, prefs } = await ensureProfile(db, user)
-  const now = Date.now()
-  const today = localDate(now, row.timezone)
-  const bounds = dayBounds(today, row.timezone)
+  const pg = workspaceClient(c.env, c.get('accessToken'))
+
+  let account: { profile: Profile; preferences: Preferences } | null = null
+  if (pg) {
+    try {
+      const workspaceId = await ensureWorkspace(pg, user)
+      const [profileResult, prefResult] = await Promise.all([
+        pg.from('profiles').select(PROFILE_COLUMNS).eq('id', user.sub).maybeSingle(),
+        pg.from('study_preferences').select('preferred_session_minutes, break_minutes, max_daily_minutes, planning_horizon_days, planning_style, theme, urgent_first').eq('workspace_id', workspaceId).maybeSingle(),
+      ])
+      if (profileResult.error) throw toWorkspaceError(profileResult.error)
+      if (prefResult.error) throw toWorkspaceError(prefResult.error)
+      account = {
+        profile: mapPgProfile(profileResult.data as ProfileRow | null),
+        preferences: mapPgPreferences(prefResult.data as PrefsRow | null),
+      }
+    } catch (error) {
+      const workspaceError = error instanceof Error ? error : new Error('The workspace database is unavailable.')
+      return fail(c, 503, 'workspace_unavailable', workspaceError.message)
+    }
+  } else {
+    // Development identity without Supabase configured.
+    const { profile: row, prefs } = await ensureProfile(db, user)
+    account = { profile: mapProfile(row), preferences: mapPreferences(prefs) }
+  }
+
+  const timezone = account.profile.timezone
+  const today = localDate(Date.now(), timezone)
+  const bounds = dayBounds(today, timezone)
 
   const counts = await one<{ subjects: number; open_tasks: number; today_sessions: number }>(
     db,
@@ -36,8 +110,8 @@ profile.get('/me', async (c) => {
 
   const me: Me = {
     user: { sub: user.sub, name: user.name, email: user.email, picture: user.picture },
-    profile: mapProfile(row),
-    preferences: mapPreferences(prefs),
+    profile: account.profile,
+    preferences: account.preferences,
     capabilities: {
       database: true,
       auth: authMode(c.env, c.req.raw) as Me['capabilities']['auth'],
@@ -67,10 +141,35 @@ const profileSchema = z.object({
 profile.patch('/me', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
+  const pg = workspaceClient(c.env, c.get('accessToken'))
   const parsed = await parseBody(c, profileSchema)
   if (isResponse(parsed)) return parsed
-  const { profile: row } = await ensureProfile(db, user)
 
+  if (pg) {
+    try {
+      await ensureWorkspace(pg, user)
+      const { data: current, error: readError } = await pg.from('profiles').select(PROFILE_COLUMNS).eq('id', user.sub).maybeSingle()
+      if (readError) throw toWorkspaceError(readError)
+      const row = current as ProfileRow | null
+
+      const next = {
+        display_name: parsed.displayName ?? row?.display_name ?? 'Student',
+        academic_context: parsed.academicContext === undefined ? (row?.academic_context ?? null) : parsed.academicContext,
+        learning_goal: parsed.learningGoal === undefined ? (row?.learning_goal ?? null) : parsed.learningGoal,
+        timezone: parsed.timezone ?? row?.timezone ?? 'UTC',
+        onboarding_step: parsed.onboardingStep ?? row?.onboarding_step ?? 1,
+        onboarding_completed: parsed.onboardingCompleted === undefined ? (row?.onboarding_completed ?? false) : parsed.onboardingCompleted,
+      }
+
+      const { data: updated, error } = await pg.from('profiles').update(next).eq('id', user.sub).select(PROFILE_COLUMNS).single()
+      if (error) throw toWorkspaceError(error)
+      return reply(c, { profile: mapPgProfile(updated as ProfileRow) })
+    } catch (error) {
+      return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not save your profile.')
+    }
+  }
+
+  const { profile: row } = await ensureProfile(db, user)
   const next = {
     displayName: parsed.displayName ?? row.display_name,
     academicContext: parsed.academicContext === undefined ? row.academic_context : parsed.academicContext,
@@ -101,13 +200,41 @@ const preferencesSchema = z.object({
   urgentFirst: z.boolean().optional(),
 })
 
+const PREF_COLUMNS = 'preferred_session_minutes, break_minutes, max_daily_minutes, planning_horizon_days, planning_style, theme, urgent_first'
+
 profile.patch('/me/preferences', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
+  const pg = workspaceClient(c.env, c.get('accessToken'))
   const parsed = await parseBody(c, preferencesSchema)
   if (isResponse(parsed)) return parsed
-  const { prefs } = await ensureProfile(db, user)
 
+  if (pg) {
+    try {
+      const workspaceId = await ensureWorkspace(pg, user)
+      const { data: current, error: readError } = await pg.from('study_preferences').select(PREF_COLUMNS).eq('workspace_id', workspaceId).maybeSingle()
+      if (readError) throw toWorkspaceError(readError)
+      const row = current as PrefsRow | null
+
+      const next = {
+        preferred_session_minutes: parsed.preferredSessionMinutes ?? row?.preferred_session_minutes ?? 50,
+        break_minutes: parsed.breakMinutes ?? row?.break_minutes ?? 10,
+        max_daily_minutes: parsed.maxDailyMinutes ?? row?.max_daily_minutes ?? 240,
+        planning_horizon_days: parsed.planningHorizonDays ?? row?.planning_horizon_days ?? 7,
+        planning_style: parsed.planningStyle ?? row?.planning_style ?? 'balanced',
+        theme: parsed.theme ?? row?.theme ?? 'dark',
+        urgent_first: parsed.urgentFirst === undefined ? (row?.urgent_first ?? false) : parsed.urgentFirst,
+      }
+
+      const { data: updated, error } = await pg.from('study_preferences').update(next).eq('workspace_id', workspaceId).select(PREF_COLUMNS).single()
+      if (error) throw toWorkspaceError(error)
+      return reply(c, { preferences: mapPgPreferences(updated as PrefsRow) })
+    } catch (error) {
+      return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not save your preferences.')
+    }
+  }
+
+  const { prefs } = await ensureProfile(db, user)
   const next = {
     preferredSessionMinutes: parsed.preferredSessionMinutes ?? prefs.preferred_session_minutes,
     breakMinutes: parsed.breakMinutes ?? prefs.break_minutes,
@@ -142,13 +269,31 @@ profile.patch('/me/preferences', async (c) => {
 profile.delete('/account', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
+  const pg = workspaceClient(c.env, c.get('accessToken'))
   if (c.req.query('confirm') !== 'delete') {
     return fail(c, 400, 'confirmation_required', 'Account deletion needs an explicit confirmation.')
   }
+
+  if (pg) {
+    try {
+      const workspaceId = await findWorkspace(pg, user)
+      if (workspaceId) {
+        // Deleting the workspace cascades every workspace-owned table.
+        const { error } = await pg.from('workspaces').delete().eq('id', workspaceId)
+        if (error) throw toWorkspaceError(error)
+      }
+      const { error: profileError } = await pg.from('profiles').delete().eq('id', user.sub)
+      if (profileError) throw toWorkspaceError(profileError)
+    } catch (error) {
+      return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not delete your workspace data.')
+    }
+  }
+
+  // Remaining domains still live in D1 until they are ported.
   const files = await many<{ object_key: string }>(db, 'SELECT object_key FROM study_materials WHERE owner_sub = ? AND object_key IS NOT NULL', user.sub)
-  if (c.env.FILES && files.length) await c.env.FILES.delete(files.map(file => file.object_key))
+  if (c.env.FILES && files.length) await c.env.FILES.delete(files.map((file) => file.object_key))
   await db.batch([
-    ...['flashcard_reviews', 'notebook_messages', 'quiz_attempts', 'study_artifacts', 'study_materials'].map(table => db.prepare(`DELETE FROM ${table} WHERE owner_sub = ?`).bind(user.sub)),
+    ...['flashcard_reviews', 'notebook_messages', 'quiz_attempts', 'study_artifacts', 'study_materials'].map((table) => db.prepare(`DELETE FROM ${table} WHERE owner_sub = ?`).bind(user.sub)),
     db.prepare('DELETE FROM focus_runs WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM study_sessions WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM study_plans WHERE owner_sub = ?').bind(user.sub),

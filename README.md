@@ -1,11 +1,13 @@
 # Studium
 
-> **Auth and backend status:** Supabase Auth now owns accounts — sign-up, sign-in,
-> password reset, session restore and sign-out — and the Postgres schema, RLS
-> policies and private storage bucket are versioned in `supabase/migrations/` and
-> verified by `npm run check:schema`. The hosted project still needs that SQL
-> applied, and the workspace API still persists through D1 until the route-by-route
-> move to Postgres. Setup, exact scope and next steps: [Supabase backend](docs/supabase-backend.md).
+> **Auth and backend status:** Supabase Auth owns accounts (sign-up, sign-in,
+> password reset, session restore, sign-out). The schema, RLS policies and private
+> storage bucket in `supabase/migrations/` are applied to the hosted project and
+> verified by `npm run check:schema`. Accounts — profile, default workspace and
+> study preferences — now read and write Postgres under the user's JWT; the
+> remaining domains still persist through D1 as they are ported one slice at a
+> time. Architecture and port order: [architecture](docs/architecture.md). Setup:
+> [Supabase backend](docs/supabase-backend.md).
 
 ## Current implementation
 

@@ -1,4 +1,5 @@
 import type { FreebuffUser } from '@freebuff/auth'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface Env {
   ASSETS: Fetcher
@@ -23,6 +24,10 @@ export interface Env {
 export type Variables = {
   user: FreebuffUser
   db: D1Database
+  /** Raw Supabase access token, used for row-level-security-scoped queries. */
+  accessToken?: string
+  pg: SupabaseClient
+  workspaceId: string
 }
 
 export type AppContext = { Bindings: Env; Variables: Variables }

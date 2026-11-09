@@ -81,6 +81,8 @@ export const requireUser: MiddlewareHandler<AppContext> = async (c, next) => {
   }
   const user = await currentUser(c.env, request)
   if (!user) return c.json({ error: 'Sign in required.' }, 401)
+  const token = request.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1]
+  if (token) c.set('accessToken', token)
   c.set('user', user)
   await next()
 }

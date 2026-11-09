@@ -19,11 +19,17 @@ path policies. `scripts/check-schema.mjs` applies those migrations to an
 in-memory Postgres, simulates two auth users and asserts isolation, constraints
 and provisioning; it passes.
 
-Still outstanding: the hosted project needs the SQL applied (see
-[supabase-backend.md](supabase-backend.md)), and the workspace API still stores
-through D1. The account flow itself is real — the Worker verifies Supabase bearer
-tokens on every request — so no part of the UI claims a database that is not
-connected.
+The migrations are now **applied** to the hosted project, and the first data
+slice has moved: `GET /api/me`, profile updates, preference updates and account
+deletion read and write Postgres using the user's access token, so row-level
+security — not a service key — authorizes every row. Subjects, tasks,
+availability, plans, sessions, focus and study sets still use D1 until their
+slices land; [architecture.md](architecture.md) records the order and the rules.
+
+A live smoke test creates two confirmed accounts, provisions both workspaces,
+edits a profile and preferences, proves each user can read only their own
+profile, deletes one account, and confirms the other workspace survives. All
+sixteen assertions pass against the hosted database.
 
 ## November 9, 2026: expanded study workspace with Frosted UI
 
