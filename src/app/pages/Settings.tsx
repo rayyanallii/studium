@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { AcademicContext, PlanningStyle, Theme } from '../../shared/types'
 import { ACADEMIC_CONTEXTS } from '../../shared/types'
 import { AvailabilityEditor, type DraftWindow } from '../components/AvailabilityEditor'
-import { signOut } from '../components/Shell'
+import { signOut } from '../lib/auth'
 import { ThemeToggle } from '../components/ThemeProvider'
 import { Alert, Badge, Button, Card, ConfirmDialog, Field, Input, PageHeader, Segmented, Select, Switch, Textarea, useFieldId, useToast } from '../components/ui'
 import {
@@ -246,7 +246,7 @@ export function Settings() {
             </li>
             <li className="flex items-center justify-between gap-3 py-2.5">
               <span>
-                <span className="block text-[15px] font-medium">Database</span>
+                <span className="block text-[15px] font-medium">Workspace database</span>
                 <span className="block text-[13px] text-faint">Cloudflare D1</span>
               </span>
               <Badge tone={me.capabilities.database ? 'success' : 'danger'} dot>
@@ -281,7 +281,7 @@ export function Settings() {
           <h2 className="text-[14px] font-semibold">Account</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {me.capabilities.auth !== 'development' ? (
-              <Button onClick={signOut}>
+              <Button onClick={() => void signOut()}>
                 <LogOut />
                 Sign out
               </Button>
@@ -294,7 +294,7 @@ export function Settings() {
             </Button>
           </div>
           <p className="mt-2 text-[13px] leading-relaxed text-faint">
-            Deletes every subject, task, plan, session and focus run in Studium. Your Freebuff identity is managed by your sign-in provider.
+            Deletes every subject, task, plan, session, study set and focus run in Studium. Your sign-in account itself is managed by your authentication provider and is not deleted.
           </p>
         </Card>
       </div>

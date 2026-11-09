@@ -1,6 +1,31 @@
 # Studium implementation status
 
-## Current: expanded study workspace with Frosted UI
+## November 10, 2026: account flow and Supabase backend foundation
+
+Authentication is now a complete account flow rather than a single opt-in page.
+Public routes are `/`, `/login`, `/signup`, `/forgot-password`,
+`/reset-password` and `/auth/callback`; every other path requires a Supabase
+session, redirects to `/login?next=<path>` when signed out, and returns there
+after signing in. The onboarding gate stays until `profiles.onboardingCompleted`
+is true. The avatar popover carries identity, settings, a System/Light/Dark
+control and sign out; signing out clears cached queries before leaving.
+
+The Supabase project (email auth enabled) had no tables, so the backend was
+written as versioned migrations: the full schema from PRD section 8, a
+security-definer ownership function, RLS on every user-owned table, a sign-up
+provisioning trigger that creates the profile, default workspace and study
+preferences atomically, and a private `study-materials` bucket with per-user
+path policies. `scripts/check-schema.mjs` applies those migrations to an
+in-memory Postgres, simulates two auth users and asserts isolation, constraints
+and provisioning; it passes.
+
+Still outstanding: the hosted project needs the SQL applied (see
+[supabase-backend.md](supabase-backend.md)), and the workspace API still stores
+through D1. The account flow itself is real — the Worker verifies Supabase bearer
+tokens on every request — so no part of the UI claims a database that is not
+connected.
+
+## November 9, 2026: expanded study workspace with Frosted UI
 
 The latest November 9 visual update uses Whop's official Frosted UI and adds
 source uploads, AI flashcards, quizzes and a source-grounded notebook. See the

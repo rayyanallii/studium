@@ -87,8 +87,8 @@ export function Landing() {
               Turn course materials into flashcards, quizzes and source-grounded notebooks. Make a study plan, then put it into practice.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link to="/login" className="inline-flex h-11 items-center gap-2 rounded-control bg-accent px-5 text-[14.5px] font-medium text-on-accent shadow-float transition-colors hover:bg-accent-deep">
-                Open your study workspace
+              <Link to="/signup" className="inline-flex h-11 items-center gap-2 rounded-control bg-accent px-5 text-[14.5px] font-medium text-on-accent shadow-float transition-colors hover:bg-accent-deep">
+                Start planning for free
                 <ArrowRight className="size-4" />
               </Link>
               <a href="#features" className="inline-flex h-11 items-center rounded-control border border-line-strong bg-panel px-5 text-[14.5px] font-medium transition-colors hover:bg-surface-2">
@@ -200,7 +200,7 @@ export function Landing() {
               <h2 className="text-balance text-[32px] font-semibold tracking-[-0.03em] sm:text-[40px]">Less planning. More learning.</h2>
               <p className="mt-2 max-w-xl text-[14.5px] text-white/65">Build your study profile once, then let the plan keep up with your week.</p>
             </div>
-            <Link to="/login" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-control bg-white px-5 text-[14.5px] font-medium text-fg transition-opacity hover:opacity-90">
+            <Link to="/signup" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-control bg-white px-5 text-[14.5px] font-medium text-fg transition-opacity hover:opacity-90">
               Create Your Study Plan
               <ArrowRight className="size-4" />
             </Link>

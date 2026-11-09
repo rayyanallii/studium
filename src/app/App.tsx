@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router'
 import { lazy, Suspense } from 'react'
 import { MotionConfig } from 'motion/react'
 
@@ -8,10 +8,12 @@ import { Shell } from './components/Shell'
 import { Spinner, ToastProvider } from './components/ui'
 import { ThemeProvider } from './components/ThemeProvider'
 import { api, ApiError, useMe } from './lib/api'
+import { useSession } from './lib/auth'
+import { supabase } from './lib/supabase'
+import { AuthCallback, AuthPage } from './pages/AuthPage'
 import { Dashboard } from './pages/Dashboard'
 import { Landing } from './pages/Landing'
 import { Onboarding } from './pages/Onboarding'
-import { SignIn } from './pages/SignIn'
 import { SubjectDetail } from './pages/SubjectDetail'
 import { Subjects } from './pages/Subjects'
 import { Tasks } from './pages/Tasks'
@@ -44,20 +46,30 @@ function SetupNeeded({ message }: { message: string }) {
   return (
     <div className="grid min-h-screen place-items-center px-5">
       <div className="w-full max-w-md rounded-card border border-line bg-panel p-6 text-center shadow-card">
-        <h1 className="text-[18px] font-semibold">Storage is not connected</h1>
+        <h1 className="text-[18px] font-semibold">Workspace unavailable</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted">{message}</p>
-        <p className="mt-4 text-[14px] text-faint">Attach a D1 database named DB, then reload.</p>
       </div>
     </div>
   )
+}
+
+/** A private URL while signed out keeps its destination for after sign-in. */
+function SignInRedirect() {
+  const location = useLocation()
+  const next = encodeURIComponent(`${location.pathname}${location.search}`)
+  return <Navigate to={`/login?next=${next}`} replace />
 }
 
 function PublicRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<SignIn />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<AuthPage mode="login" />} />
+      <Route path="/signup" element={<AuthPage mode="signup" />} />
+      <Route path="/forgot-password" element={<AuthPage mode="forgot" />} />
+      <Route path="/reset-password" element={<AuthPage mode="reset" />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="*" element={<SignInRedirect />} />
     </Routes>
   )
 }
@@ -86,13 +98,24 @@ function AppRoutes() {
 }
 
 function Gate() {
+  const { session, loading } = useSession()
   const me = useMe()
 
-  // Keep password recovery reachable even after Supabase establishes a session.
-  if (window.location.pathname === '/login') return <SignIn />
+  // With Supabase configured, the browser session decides public vs private.
+  if (supabase) {
+    if (loading) return <Splash />
+    if (!session) return <PublicRoutes />
+  }
 
   if (me.isLoading) return <Splash />
-  if (me.error instanceof ApiError && me.error.status === 401) return <PublicRoutes />
+  if (me.error instanceof ApiError && me.error.status === 401) {
+    if (supabase && session) {
+      return (
+        <SetupNeeded message="Your session is valid but the workspace API rejected it. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY for the Worker to the same Supabase project as VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY, then reload." />
+      )
+    }
+    return <PublicRoutes />
+  }
   if (me.error) return <SetupNeeded message={me.error.message} />
   if (!me.data) return <Splash />
 
@@ -121,19 +144,23 @@ function Themed() {
 
   return (
     <ThemeProvider preference={preference} onChange={changeTheme}>
-      <Suspense fallback={<Splash />}><Gate /></Suspense>
+      <Suspense fallback={<Splash />}>
+        <Gate />
+      </Suspense>
     </ThemeProvider>
   )
 }
 
 export function App() {
   return (
-    <MotionConfig reducedMotion="user"><QueryClientProvider client={client}>
-      <ToastProvider>
-        <BrowserRouter>
-          <Themed />
-        </BrowserRouter>
-      </ToastProvider>
-    </QueryClientProvider></MotionConfig>
+    <MotionConfig reducedMotion="user">
+      <QueryClientProvider client={client}>
+        <ToastProvider>
+          <BrowserRouter>
+            <Themed />
+          </BrowserRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </MotionConfig>
   )
 }

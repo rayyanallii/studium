@@ -1,5 +1,12 @@
 # Studium
 
+> **Auth and backend status:** Supabase Auth now owns accounts — sign-up, sign-in,
+> password reset, session restore and sign-out — and the Postgres schema, RLS
+> policies and private storage bucket are versioned in `supabase/migrations/` and
+> verified by `npm run check:schema`. The hosted project still needs that SQL
+> applied, and the workspace API still persists through D1 until the route-by-route
+> move to Postgres. Setup, exact scope and next steps: [Supabase backend](docs/supabase-backend.md).
+
 ## Current implementation
 
 Studium now includes a study library, AI flashcards, scored quizzes, and
@@ -45,7 +52,7 @@ sandbox, so the app is built on the existing stack instead:
 | PRD | Here |
 | --- | --- |
 | Next.js | Vite + React 19, single-page app served by the Worker |
-| Supabase (Postgres + Auth + RLS) | Cloudflare D1 (SQLite) + Sign in with Freebuff; every query is scoped by `owner_sub` server-side |
+| Supabase (Postgres + Auth + RLS) | Supabase Auth is wired; the Postgres schema and RLS policies live in `supabase/migrations/`. The workspace API still persists through Cloudflare D1 (SQLite), scoped by the verified user id server-side |
 | OpenAI SDK | OpenAI-compatible gateway (`gpt-6-luna`) called with `fetch` from the Worker only |
 
 The template provides auth, onboarding, subjects, tasks,

@@ -23,10 +23,10 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { BRAND } from '../../shared/types'
 import { useStudyArtifacts } from '../lib/study-api'
 import { useMe } from '../lib/api'
-import { supabase } from '../lib/supabase'
+import { signOut } from '../lib/auth'
 import { cx } from '../lib/cx'
-import { ThemeToggle } from './ThemeProvider'
-import { Avatar, Button, Dialog, Drawer, Input, Menu } from './ui'
+import { AccountMenu } from './AccountMenu'
+import { Button, Dialog, Drawer, Input } from './ui'
 
 const NAV: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -52,23 +52,6 @@ export function Logo({ className, compact }: { className?: string; compact?: boo
   )
 }
 
-export function signOut() {
-  if (supabase) {
-    void supabase.auth.signOut().then(({ error }) => { if (!error) window.location.assign('/login') })
-    return
-  }
-  const form = document.createElement('form')
-  form.method = 'POST'
-  form.action = '/auth/freebuff/signout'
-  const input = document.createElement('input')
-  input.type = 'hidden'
-  input.name = 'returnTo'
-  input.value = '/'
-  form.appendChild(input)
-  document.body.appendChild(form)
-  form.submit()
-}
-
 export function Shell() {
   const { data: me } = useMe()
   const [moreOpen, setMoreOpen] = useState(false)
@@ -90,7 +73,7 @@ export function Shell() {
       <header className="sticky top-0 z-30 col-span-2 grid h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-line bg-bg px-4 sm:gap-6 lg:grid-cols-[1fr_minmax(240px,400px)_1fr] lg:px-6">
         <Logo className="justify-self-start max-sm:gap-2 max-sm:[&>span:last-child]:text-[22px]" />
         <button type="button" onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center justify-self-center gap-3 rounded-[14px] bg-surface-2 text-muted sm:h-11 sm:w-full sm:max-w-[400px] sm:justify-start sm:px-4" aria-label="Search workspace"><Search className="size-5 shrink-0" /><span className="hidden sm:inline">Search</span><kbd className="ml-auto hidden rounded-md border border-line-strong px-1.5 py-0.5 text-xs sm:inline">Ctrl K</kbd></button>
-        <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><ThemeToggle /><Menu trigger={<button type="button" aria-label="Account" className="grid size-10 shrink-0 place-items-center rounded-full"><Avatar name={name} src={me?.user.picture} size={36} /></button>} items={[{ label: 'Settings', icon: <Settings />, onSelect: () => navigate('/settings') }, ...(isDev ? [] : [{ label: 'Sign out', icon: <LogOut />, onSelect: signOut }])]} /></div>
+        <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><AccountMenu /></div>
       </header>
       <aside className="sticky top-[72px] hidden h-[calc(100vh-72px)] flex-col border-r border-line bg-bg px-3 py-4 lg:flex">
         <div className="flex gap-3 px-1"><span className="grid size-14 place-items-center rounded-[17px] border-2 border-fg bg-surface-2" title="Personal workspace"><User className="size-6" /></span><button type="button" aria-label="Open study library" onClick={() => navigate('/library')} className="grid size-14 place-items-center rounded-[17px] bg-surface-2 text-muted hover:text-fg"><Plus className="size-7" /></button></div>
@@ -161,7 +144,7 @@ export function Shell() {
             Settings
           </NavLink>
           {!isDev && (
-            <button type="button" onClick={signOut} className={cx(linkClass({ isActive: false }), 'mt-2 text-danger hover:bg-danger-soft hover:text-danger')}>
+            <button type="button" onClick={() => void signOut()} className={cx(linkClass({ isActive: false }), 'mt-2 text-danger hover:bg-danger-soft hover:text-danger')}>
               <LogOut />
               Sign out
             </button>
