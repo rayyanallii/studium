@@ -1,0 +1,132 @@
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import { lazy, Suspense } from 'react'
+import { MotionConfig } from 'motion/react'
+
+import type { Me } from '../shared/types'
+import { Shell } from './components/Shell'
+import { Spinner, ToastProvider } from './components/ui'
+import { ThemeProvider } from './components/ThemeProvider'
+import { api, ApiError, useMe } from './lib/api'
+import { Dashboard } from './pages/Dashboard'
+import { Landing } from './pages/Landing'
+import { Onboarding } from './pages/Onboarding'
+import { SignIn } from './pages/SignIn'
+import { SubjectDetail } from './pages/SubjectDetail'
+import { Subjects } from './pages/Subjects'
+import { Tasks } from './pages/Tasks'
+
+const Analytics = lazy(() => import('./pages/Analytics').then(module => ({ default: module.Analytics })))
+const Planner = lazy(() => import('./pages/Planner').then(module => ({ default: module.Planner })))
+const Focus = lazy(() => import('./pages/Focus').then(module => ({ default: module.Focus })))
+const Settings = lazy(() => import('./pages/Settings').then(module => ({ default: module.Settings })))
+
+const client = new QueryClient({
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 } },
+})
+
+function Splash() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-bg">
+      <div className="flex flex-col items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-[12px] bg-accent">
+          <span className="ml-1.5 h-4 w-2 rounded-r-[3px] bg-white" />
+        </span>
+        <Spinner />
+      </div>
+    </div>
+  )
+}
+
+function SetupNeeded({ message }: { message: string }) {
+  return (
+    <div className="grid min-h-screen place-items-center px-5">
+      <div className="w-full max-w-md rounded-card border border-line bg-surface p-6 text-center shadow-card">
+        <h1 className="text-[18px] font-semibold">Storage is not connected</h1>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{message}</p>
+        <p className="mt-4 text-[12.5px] text-faint">Attach a D1 database named DB, then reload.</p>
+      </div>
+    </div>
+  )
+}
+
+function PublicRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<SignIn />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<Shell />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/planner" element={<Planner />} />
+        <Route path="/subjects" element={<Subjects />} />
+        <Route path="/subjects/:id" element={<SubjectDetail />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/focus" element={<Focus />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  )
+}
+
+function Gate() {
+  const me = useMe()
+
+  // Keep password recovery reachable even after Supabase establishes a session.
+  if (window.location.pathname === '/login') return <SignIn />
+
+  if (me.isLoading) return <Splash />
+  if (me.error instanceof ApiError && me.error.status === 401) return <PublicRoutes />
+  if (me.error) return <SetupNeeded message={me.error.message} />
+  if (!me.data) return <Splash />
+
+  if (!me.data.profile.onboardingCompleted) {
+    return (
+      <Routes>
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+      </Routes>
+    )
+  }
+
+  return <AppRoutes />
+}
+
+function Themed() {
+  const me = useMe()
+  const queryClient = useQueryClient()
+  const preference = me.data?.preferences.theme ?? 'dark'
+
+  const changeTheme = (theme: Me['preferences']['theme']) => {
+    if (!me.data) return
+    queryClient.setQueryData<Me>(['me'], { ...me.data, preferences: { ...me.data.preferences, theme } })
+    void api('/me/preferences', { method: 'PATCH', json: { theme } }).catch(() => undefined)
+  }
+
+  return (
+    <ThemeProvider preference={preference} onChange={changeTheme}>
+      <Suspense fallback={<Splash />}><Gate /></Suspense>
+    </ThemeProvider>
+  )
+}
+
+export function App() {
+  return (
+    <MotionConfig reducedMotion="user"><QueryClientProvider client={client}>
+      <ToastProvider>
+        <BrowserRouter>
+          <Themed />
+        </BrowserRouter>
+      </ToastProvider>
+    </QueryClientProvider></MotionConfig>
+  )
+}

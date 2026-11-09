@@ -1,0 +1,13 @@
+FREEBUFF_CLIENT_ID=
+# Optional Supabase auth replacement. Configure matching VITE_* values in .env.local.
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+FREEBUFF_ISSUER=https://freebuff.com/oidc
+APP_ORIGIN=http://localhost:5173
+
+# AI planning gateway (OpenAI-compatible). Required for AI recommendations;
+# without it Studium still plans deterministically.
+EXPLABS_API_KEY=
+AI_BASE_URL=https://api.experientiallabs.ai/v1
+AI_MODEL=gpt-6-luna
+AI_DAILY_LIMIT=5
