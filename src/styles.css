@@ -154,11 +154,13 @@
 .dialog-popup[data-starting-style], .dialog-popup[data-ending-style] { scale: .98; }
 .drawer-popup { transition: transform 180ms ease; }
 .drawer-popup[data-starting-style], .drawer-popup[data-ending-style] { transform: translateX(100%); }
-.dashboard-stats > section { background: transparent; box-shadow: none; border-right: 1px solid var(--color-line); border-radius: 0; padding: 6px 24px; }
-.dashboard-stats > section:first-child { padding-left: 0; }
-.dashboard-stats > section:last-child { border-right: 0; }
+.dashboard-stats > section { background: transparent; box-shadow: none; border: 0; border-radius: 0; padding: 16px 24px; }
+.dashboard-stats > section:nth-child(even) { border-left: 1px solid var(--color-line); }
+@media (min-width: 1024px) {
+  .dashboard-stats > section + section { border-left: 1px solid var(--color-line); }
+}
 @media (max-width: 639px) {
-  .dashboard-stats > section { padding: 12px 0; border-right: 0; }
+  .dashboard-stats > section { padding: 16px 12px; }
 }
 
 

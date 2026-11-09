@@ -77,7 +77,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => setTheme(dark ? 'light' : 'dark')}
       aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className={cx('grid size-9 shrink-0 place-items-center rounded-control border border-line bg-panel text-muted transition-colors hover:text-fg', className)}
+      className={cx('grid size-10 shrink-0 place-items-center rounded-control border border-line bg-panel text-muted transition-colors hover:text-fg', className)}
     >
       {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>

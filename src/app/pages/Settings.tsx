@@ -207,7 +207,7 @@ export function Settings() {
           <div className="mt-4">
             <AvailabilityEditor rules={rules} onChange={setRules} />
           </div>
-          <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[13px] text-faint">Changes apply to the next plan you generate.</p>
             <Button variant="primary" onClick={saveRules} loading={saveAvailability.isPending}>
               Save availability

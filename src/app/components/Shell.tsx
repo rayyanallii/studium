@@ -80,22 +80,22 @@ export function Shell() {
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cx(
-      'flex h-12 items-center gap-3.5 rounded-[16px] px-4 text-[17px] font-medium transition-colors [&_svg]:size-[22px]',
+      'flex min-h-12 shrink-0 items-center gap-3.5 rounded-[16px] px-4 py-3 text-[17px] font-medium leading-6 transition-colors [&_svg]:size-[22px] [&_svg]:shrink-0',
       isActive ? 'bg-raised text-fg' : 'text-muted hover:bg-surface-2 hover:text-fg',
     )
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[72px_minmax(0,1fr)]">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-control focus:bg-accent focus:p-3 focus:text-on-accent">Skip to content</a>
-      <header className="sticky top-0 z-30 col-span-2 flex h-[72px] items-center gap-4 border-b border-line bg-bg px-4 lg:px-6">
-        <Logo className="lg:w-[232px]" />
-        <button type="button" onClick={() => setSearchOpen(true)} className="mx-auto flex h-11 w-full max-w-[400px] items-center gap-3 rounded-[14px] bg-surface-2 px-4 text-muted" aria-label="Search workspace"><Search className="size-5 shrink-0" /><span className="hidden sm:inline">Search</span><kbd className="ml-auto hidden rounded-md border border-line-strong px-1.5 text-xs sm:inline">Ctrl K</kbd></button>
-        <div className="ml-auto flex items-center gap-2 sm:gap-4"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><ThemeToggle /><Menu trigger={<button type="button" aria-label="Account" className="rounded-full"><Avatar name={name} src={me?.user.picture} size={36} /></button>} items={[{ label: 'Settings', icon: <Settings />, onSelect: () => navigate('/settings') }, ...(isDev ? [] : [{ label: 'Sign out', icon: <LogOut />, onSelect: signOut }])]} /></div>
+      <header className="sticky top-0 z-30 col-span-2 grid h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-line bg-bg px-4 sm:gap-6 lg:grid-cols-[1fr_minmax(240px,400px)_1fr] lg:px-6">
+        <Logo className="justify-self-start max-sm:gap-2 max-sm:[&>span:last-child]:text-[22px]" />
+        <button type="button" onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center justify-self-center gap-3 rounded-[14px] bg-surface-2 text-muted sm:h-11 sm:w-full sm:max-w-[400px] sm:justify-start sm:px-4" aria-label="Search workspace"><Search className="size-5 shrink-0" /><span className="hidden sm:inline">Search</span><kbd className="ml-auto hidden rounded-md border border-line-strong px-1.5 py-0.5 text-xs sm:inline">Ctrl K</kbd></button>
+        <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><ThemeToggle /><Menu trigger={<button type="button" aria-label="Account" className="grid size-10 shrink-0 place-items-center rounded-full"><Avatar name={name} src={me?.user.picture} size={36} /></button>} items={[{ label: 'Settings', icon: <Settings />, onSelect: () => navigate('/settings') }, ...(isDev ? [] : [{ label: 'Sign out', icon: <LogOut />, onSelect: signOut }])]} /></div>
       </header>
       <aside className="sticky top-[72px] hidden h-[calc(100vh-72px)] flex-col border-r border-line bg-bg px-3 py-4 lg:flex">
         <div className="flex gap-3 px-1"><span className="grid size-14 place-items-center rounded-[17px] border-2 border-fg bg-surface-2" title="Personal workspace"><User className="size-6" /></span><button type="button" aria-label="Open study library" onClick={() => navigate('/library')} className="grid size-14 place-items-center rounded-[17px] bg-surface-2 text-muted hover:text-fg"><Plus className="size-7" /></button></div>
         <p className="mt-6 px-4 text-[14px] font-medium text-faint">Personal workspace</p>
-        <nav className="mt-4 flex flex-1 flex-col gap-1 overflow-y-auto" aria-label="Main">
+        <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto" aria-label="Main">
           {NAV.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} className={state => cx(linkClass(state), to === '/planner' && 'mt-5')}>
               <Icon />
@@ -103,7 +103,7 @@ export function Shell() {
               {to === '/tasks' && Boolean(me?.counts.openTasks) && <span className="ml-auto text-[11px] tabular text-muted">{me?.counts.openTasks}</span>}
             </NavLink>
           ))}
-          <div className="my-3 h-px bg-line" />
+          <div className="my-3 h-px shrink-0 bg-line" />
           <NavLink to="/settings" className={linkClass}>
             <Settings />
             Settings

@@ -33,13 +33,13 @@ export function TaskRow({ task, timezone, onEdit, showSubject = true }: { task: 
   }
 
   return (
-    <div className={cx('group flex items-center gap-3 border-b border-line px-3 py-3 last:border-b-0 sm:px-4', done && 'opacity-60')}>
+    <div className={cx('group grid grid-cols-[20px_minmax(0,1fr)_32px] items-start gap-x-3 gap-y-2 border-b border-line px-4 py-4 last:border-b-0 sm:flex sm:items-center', done && 'opacity-60')}>
       <button
         type="button"
         onClick={toggle}
         aria-label={done ? `Reopen ${task.title}` : `Complete ${task.title}`}
         className={cx(
-          'grid size-5 shrink-0 place-items-center rounded-full border transition-colors',
+          'mt-1 grid size-5 shrink-0 place-items-center rounded-full border transition-colors sm:mt-0',
           done ? 'border-success bg-success text-white' : 'border-line-strong text-transparent hover:border-accent hover:text-accent',
         )}
       >
@@ -47,8 +47,8 @@ export function TaskRow({ task, timezone, onEdit, showSubject = true }: { task: 
       </button>
 
       <button type="button" onClick={() => onEdit(task)} className="min-w-0 flex-1 text-left">
-        <span className={cx('block truncate text-[15px] font-medium', done && 'line-through')}>{task.title}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-faint">
+        <span className={cx('block text-[15px] font-medium leading-6 sm:truncate', done && 'line-through')}>{task.title}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5 text-faint">
           {showSubject && task.subjectName && (
             <span className="inline-flex items-center gap-1.5">
               <span className="round size-1.5 rounded-full" style={{ background: task.subjectColor }} />
@@ -61,9 +61,11 @@ export function TaskRow({ task, timezone, onEdit, showSubject = true }: { task: 
         </span>
       </button>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      {!done && <div className="col-start-2 row-start-2 flex flex-wrap items-center gap-2 sm:ml-auto sm:shrink-0">
         {!done && <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>}
         {task.dueAt && !done && <Badge tone={due.tone === 'danger' ? 'danger' : due.tone === 'warning' ? 'warning' : 'neutral'}>{due.label}</Badge>}
+      </div>}
+      <div className="col-start-3 row-start-1">
         <Menu
           trigger={
             <button type="button" aria-label={`Actions for ${task.title}`} className="grid size-8 place-items-center rounded-tile text-faint hover:bg-surface-2 hover:text-fg">

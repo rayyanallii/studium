@@ -41,7 +41,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
         {artifacts.isLoading ? <Skeleton className="h-52" /> : sets.length === 0 ? <Card className="border border-dashed border-line-strong bg-transparent shadow-none"><EmptyState icon={tool ? <tool.icon /> : <Layers />} title={search ? 'No matching study sets' : 'Your next study session starts here'} description={search ? 'Try another search.' : 'Add your notes or upload a document, then select sources to create your first study set.'} action={!search && <Button onClick={() => setUploadOpen(true)}><Upload />Add study material</Button>} /></Card> : <div className="grid gap-3 sm:grid-cols-2">{sets.map(item => {
           const config = STUDY_TOOLS.find(tool => tool.kind === item.kind)!
           const count = item.content.cards?.length ?? item.content.questions?.length ?? item.content.sections?.length
-          return <Card key={item.id} className="group gap-0 border border-line p-0 shadow-none">
+          return <Card key={item.id} className="group flex flex-col gap-0 border border-line p-0 shadow-none">
             <Link to={`/study/${item.id}`} className="flex flex-1 flex-col p-5"><div className="mb-4 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-[12px]" style={{ background: `var(--study-${config.color})`, color: `var(--study-${config.color}-ink)` }}><config.icon className="size-5" /></span><span className="text-[14px] text-muted">{config.title}</span></div><h3 className="text-[15px] font-semibold leading-relaxed">{item.title}</h3><p className="mt-2 text-[14px] text-muted">{count} {item.kind === 'flashcards' ? 'cards' : item.kind === 'quiz' ? 'questions' : 'sections'} · {item.sourceIds.length} {item.sourceIds.length === 1 ? 'source' : 'sources'}</p></Link>
             <div className="flex items-center justify-between border-t border-line px-5 py-2"><span className="text-[11px] text-faint">{new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span><Button variant="ghost" size="icon-sm" aria-label={`Delete ${item.title}`} onClick={() => setDeleting({ id: item.id, title: item.title, type: 'set' })}><Trash2 className="size-3.5" /></Button></div>
           </Card>
@@ -57,7 +57,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
         </div>
       </div>
 
-      <Card className="gap-4 border border-line p-5 shadow-none xl:sticky xl:top-6">
+      <Card className="flex flex-col gap-4 border border-line p-5 shadow-none xl:sticky xl:top-24">
         <div className="flex items-center justify-between"><h2 className="font-semibold">Create a study set</h2><Badge tone="accent">AI</Badge></div>
         <p className="text-[15px] leading-relaxed text-muted">Select the source materials you want to study. Your set will include quotes you can check against the originals.</p>
         {!kind && <div className="flex flex-col gap-2">{STUDY_TOOLS.map(option => <button key={option.kind} aria-pressed={generationKind === option.kind} onClick={() => setGenerationKind(option.kind)} className={`flex items-center gap-3 rounded-control border p-3 text-left text-[15px] ${generationKind === option.kind ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:bg-surface-2'}`}><option.icon className="size-4" /><span className="flex-1">{option.title}</span>{generationKind === option.kind && <Check className="size-4" />}</button>)}</div>}

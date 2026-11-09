@@ -40,15 +40,15 @@ export function SessionCard({
   return (
     <div
       className={cx(
-        'group flex items-center gap-3 rounded-card border bg-panel px-3 py-2.5 transition-colors',
+        'group flex items-center gap-3 rounded-card border bg-panel px-3 py-3 transition-colors',
         done ? 'border-success/25 bg-success-soft/30' : 'border-line hover:border-line-strong',
         compact && 'px-3 py-2',
       )}
     >
       <span className="h-9 w-1 shrink-0 rounded-full" style={{ background: session.subjectColor }} />
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
-        <span className="block truncate text-[15px] font-medium">{session.title}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] text-faint">
+        <span className="block text-[15px] font-medium leading-6 sm:truncate">{session.title}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-5 text-faint">
           <span>{session.subjectName}</span>
           <span aria-hidden>·</span>
           <span className="inline-flex items-center gap-1">
@@ -66,10 +66,10 @@ export function SessionCard({
         </span>
       </button>
       <div className="flex shrink-0 items-center gap-1.5">
-        <Badge tone={statusTone[session.status]} className="hidden sm:inline-flex">
+        <span className="hidden sm:block"><Badge tone={statusTone[session.status]}>
           {done && <Check className="size-3" />}
           {statusLabel[session.status]}
-        </Badge>
+        </Badge></span>
         {onStart && (session.status === 'planned' || session.status === 'in_progress') && (
           <button
             type="button"

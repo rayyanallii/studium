@@ -22,7 +22,7 @@ import { initials } from '../lib/format'
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'md' | 'sm' | 'icon' | 'icon-sm'
 export function Button({ variant = 'secondary', size = 'md', className, loading, children, ...rest }: ComponentPropsWithoutRef<'button'> & { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean }) {
-  return <FrostButton type="button" {...rest} variant={variant === 'primary' || variant === 'danger' ? 'solid' : variant === 'secondary' ? 'surface' : 'ghost'} color={variant === 'danger' ? 'red' : variant === 'primary' ? 'blue' : 'gray'} size={size === 'sm' || size === 'icon-sm' ? '2' : '3'} disabled={loading || rest.disabled} className={cx('[&_svg]:size-[18px] [&_svg]:shrink-0', (size === 'icon' || size === 'icon-sm') && 'aspect-square !px-0', className)} aria-busy={loading || undefined}>{loading && <LoaderCircle className="animate-spin" />}{children}</FrostButton>
+  return <FrostButton type="button" {...rest} variant={variant === 'primary' || variant === 'danger' ? 'solid' : variant === 'secondary' ? 'surface' : 'ghost'} color={variant === 'danger' ? 'red' : variant === 'primary' ? 'blue' : 'gray'} size={size === 'sm' || size === 'icon-sm' ? '2' : '3'} disabled={loading || rest.disabled} className={cx('m-0 shrink-0 gap-2 [&_svg]:size-[18px] [&_svg]:shrink-0', size === 'icon' && 'size-10 !p-0', size === 'icon-sm' && 'size-8 !p-0', className)} aria-busy={loading || undefined}>{loading && <LoaderCircle className="animate-spin" />}{children}</FrostButton>
 }
 
 export const inputClass =
@@ -30,7 +30,7 @@ export const inputClass =
 
 export function Input({ className, ...rest }: Omit<ComponentPropsWithoutRef<'input'>, 'size' | 'color'>) {
   const fieldId = useFieldId()
-  return <TextField.Root size="3" className={className}><TextField.Input id={fieldId} {...rest} size={undefined} /></TextField.Root>
+  return <TextField.Root size="3" className={cx('min-w-0 w-full', className)}><TextField.Input id={fieldId} {...rest} size="3" /></TextField.Root>
 }
 
 export function Textarea({ className, ...rest }: Omit<ComponentPropsWithoutRef<'textarea'>, 'color'>) {
@@ -64,7 +64,7 @@ export const useFieldId = () => useContext(FieldIdContext)
 export function Field({ label, children, hint, className }: { label: string; children: ReactNode; hint?: string; className?: string }) {
   const id = useId()
   return (
-    <div className={cx('flex flex-col gap-1.5', className)}>
+    <div className={cx('flex min-w-0 flex-col gap-2', className)}>
       <label id={`${id}-label`} htmlFor={id} className="text-[15px] font-medium text-fg">{label}</label>
       <FieldIdContext.Provider value={id}>{children}</FieldIdContext.Provider>
       {hint && <span className="text-[14px] text-faint">{hint}</span>}
@@ -84,7 +84,7 @@ const toneClasses: Record<Tone, string> = {
 
 export function Badge({ tone = 'neutral', className, children, dot }: { tone?: Tone; className?: string; children: ReactNode; dot?: boolean }) {
   return (
-    <span className={cx('inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-tile px-2 text-[14px] font-medium', toneClasses[tone], className)}>
+    <span className={cx('inline-flex min-h-6 shrink-0 items-center gap-1.5 self-start whitespace-nowrap rounded-tile px-2 py-0.5 text-[14px] font-medium leading-5', toneClasses[tone], className)}>
       {dot && <span className="round size-1.5 bg-current" />}
       {children}
     </span>
@@ -147,8 +147,8 @@ export function Progress({ value, tone = 'accent', className }: { value: number;
 
 export function Stat({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon?: ReactNode }) {
   return (
-    <Card className="flex flex-col justify-between gap-3 p-4">
-      <p className="flex items-center gap-1.5 text-[14px] text-muted [&_svg]:size-3.5">
+    <Card className="flex flex-col gap-4 p-5">
+      <p className="flex min-h-5 items-center gap-2 text-[14px] leading-5 text-muted [&_svg]:size-3.5 [&_svg]:shrink-0">
         {icon}
         {label}
       </p>
@@ -189,10 +189,10 @@ export function Dialog({ open, onClose, title, description, children, footer, wi
   open: boolean; onClose: () => void; title: string; description?: string; children: ReactNode; footer?: ReactNode; width?: number
 }) {
   return <FrostDialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
-    <FrostDialog.Content style={{ maxWidth: width, width: 'calc(100vw - 32px)' }} className="study-dialog">
-      <div className="mb-6 flex items-start justify-between gap-4"><div><FrostDialog.Title>{title}</FrostDialog.Title>{description && <FrostDialog.Description className="mt-2 text-muted">{description}</FrostDialog.Description>}</div><FrostDialog.Close><Button size="icon-sm" variant="ghost" aria-label="Close"><X /></Button></FrostDialog.Close></div>
+    <FrostDialog.Content style={{ maxWidth: width, width: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto' }} className="study-dialog p-5 sm:p-6">
+      <div className="mb-6 flex items-start justify-between gap-4"><div className="min-w-0"><FrostDialog.Title className="m-0">{title}</FrostDialog.Title>{description && <FrostDialog.Description className="mb-0 mt-2 text-muted">{description}</FrostDialog.Description>}</div><FrostDialog.Close><Button size="icon-sm" variant="ghost" aria-label="Close"><X /></Button></FrostDialog.Close></div>
       {children}
-      {footer && <div className="mt-7 flex justify-end gap-3">{footer}</div>}
+      {footer && <div className="mt-6 flex flex-wrap justify-end gap-3">{footer}</div>}
     </FrostDialog.Content>
   </FrostDialog.Root>
 }
@@ -245,7 +245,7 @@ export function Menu({ trigger, items, align = 'end' }: {
   items: { label: string; onSelect: () => void; danger?: boolean; icon?: ReactNode; disabled?: boolean }[];
   align?: 'start' | 'end'
 }) {
-  return <DropdownMenu.Root><DropdownMenu.Trigger>{trigger}</DropdownMenu.Trigger><DropdownMenu.Content align={align}>{items.map(item => <DropdownMenu.Item key={item.label} disabled={item.disabled} onClick={item.onSelect} color={item.danger ? 'red' : undefined}>{item.icon}{item.label}</DropdownMenu.Item>)}</DropdownMenu.Content></DropdownMenu.Root>
+  return <DropdownMenu.Root><DropdownMenu.Trigger>{trigger}</DropdownMenu.Trigger><DropdownMenu.Content align={align} sideOffset={8} className="min-w-[180px] p-1.5">{items.map(item => <DropdownMenu.Item className="min-h-10 justify-start gap-3 px-3 py-2 [&_svg]:size-[18px] [&_svg]:shrink-0" key={item.label} disabled={item.disabled} onClick={item.onSelect} color={item.danger ? 'red' : undefined}><span className="flex items-center gap-3">{item.icon}{item.label}</span></DropdownMenu.Item>)}</DropdownMenu.Content></DropdownMenu.Root>
 }
 
 type ToastItem = { id: number; message: string; tone: 'neutral' | 'danger' }

@@ -45,13 +45,13 @@ export function AvailabilityEditor({ rules, onChange }: { rules: DraftWindow[]; 
                 {windows.map(({ rule, i }) => {
                   const invalid = rule.endLocalTime <= rule.startLocalTime
                   return (
-                    <div key={i} className="flex items-center gap-2">
+                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_32px] items-center gap-2 sm:flex">
                       <Input
                         type="time"
                         aria-label={`${label} start time`}
                         value={rule.startLocalTime}
                         onChange={(event) => update(i, { startLocalTime: event.target.value })}
-                        className={cx('w-[118px]', invalid && 'border-danger')}
+                        className={cx('min-w-0 sm:w-[130px]', invalid && 'border-danger')}
                       />
                       <span className="text-[14px] text-faint">to</span>
                       <Input
@@ -59,12 +59,12 @@ export function AvailabilityEditor({ rules, onChange }: { rules: DraftWindow[]; 
                         aria-label={`${label} end time`}
                         value={rule.endLocalTime}
                         onChange={(event) => update(i, { endLocalTime: event.target.value })}
-                        className={cx('w-[118px]', invalid && 'border-danger')}
+                        className={cx('min-w-0 sm:w-[130px]', invalid && 'border-danger')}
                       />
                       <Button size="icon-sm" variant="ghost" aria-label={`Remove ${label} window`} onClick={() => remove(i)}>
                         <Trash />
                       </Button>
-                      {invalid && <span className="text-[14px] text-danger">Ends before it starts</span>}
+                      {invalid && <span className="col-span-4 text-[14px] text-danger">Ends before it starts</span>}
                     </div>
                   )
                 })}
