@@ -6,15 +6,11 @@ import { DateTime } from 'luxon'
 
 import type { StudySession } from '../../shared/types'
 import { SessionCard } from '../components/SessionCard'
-import { Alert, Badge, Button, Card, Checkbox, EmptyState, Input, PageHeader, Select, Skeleton, useFieldId, useToast } from '../components/ui'
+import { NumberInput } from '../components/fields'
+import { Alert, Badge, Button, Card, Checkbox, EmptyState, PageHeader, Select, Skeleton, useToast } from '../components/ui'
 import { useActiveFocus, useFocusAction, useMe, usePlanner, useStartFocus, useSubjects } from '../lib/api'
 import { cx } from '../lib/cx'
 import { minutesLabel, todayKey } from '../lib/format'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
 
 const DURATIONS = [25, 50] as const
 
@@ -154,7 +150,9 @@ export function Focus() {
                   Custom
                 </button>
                 {minutes === 0 && (
-                  <FieldInput type="number" min={5} max={120} value={custom} onChange={(event) => setCustom(event.target.value)} className="w-24" aria-label="Custom minutes" />
+                  <div className="w-28">
+                    <NumberInput min={5} max={120} step={5} value={custom} onValueChange={setCustom} aria-label="Custom minutes" />
+                  </div>
                 )}
               </div>
             </div>

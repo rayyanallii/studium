@@ -8,19 +8,11 @@ import { SessionCard } from '../components/SessionCard'
 import { SubjectDialog } from '../components/SubjectDialog'
 import { TaskDialog } from '../components/TaskDialog'
 import { TaskRow } from '../components/TaskRow'
-import { Alert, Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Select, Skeleton, Textarea, useFieldId, useToast } from '../components/ui'
+import { FieldInput, FieldTextarea, NumberInput } from '../components/fields'
+import { Alert, Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, PageHeader, Select, Skeleton, useToast } from '../components/ui'
 import { useAssessments, useDeleteTopic, useMe, useSaveTopic, useSubject, useSubjectAnalytics, useTasks } from '../lib/api'
 import { cx } from '../lib/cx'
 import { dateLabel, minutesLabel, untilLabel } from '../lib/format'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
-function FieldTextarea(props: React.ComponentPropsWithoutRef<typeof Textarea>) {
-  const id = useFieldId()
-  return <Textarea id={id} {...props} />
-}
 
 export function SubjectDetail() {
   const { id } = useParams()
@@ -284,7 +276,7 @@ function TopicDialog({ open, onClose, subjectId, topic }: { open: boolean; onClo
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Estimate" hint="Minutes">
-            <FieldInput type="number" min={0} max={3000} step={10} value={form.estimatedMinutes} onChange={(event) => setForm({ ...form, estimatedMinutes: event.target.value })} />
+            <NumberInput min={0} max={3000} step={10} value={form.estimatedMinutes} onValueChange={(value) => setForm({ ...form, estimatedMinutes: value })} />
           </Field>
           <Field label="Status">
             <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as Topic['status'] })}>

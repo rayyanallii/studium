@@ -3,16 +3,8 @@ import { useState } from 'react'
 import { PRIORITIES, type Task } from '../../shared/types'
 import { ApiError, useMe, useSaveTask, useSubjects, useSubject } from '../lib/api'
 import { combine, toDateInput, toTimeInput, todayKey } from '../lib/format'
-import { Alert, Button, Dialog, Field, Input, Select, Textarea, useFieldId, useToast } from './ui'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
-function FieldTextarea(props: React.ComponentPropsWithoutRef<typeof Textarea>) {
-  const id = useFieldId()
-  return <Textarea id={id} {...props} />
-}
+import { DateInput, FieldInput, FieldTextarea, NumberInput, TimeInput } from './fields'
+import { Alert, Button, Dialog, Field, Select, useToast } from './ui'
 
 export function TaskDialog({ open, onClose, task, defaultSubjectId }: { open: boolean; onClose: () => void; task?: Task | null; defaultSubjectId?: string }) {
   const toast = useToast()
@@ -113,23 +105,16 @@ export function TaskDialog({ open, onClose, task, defaultSubjectId }: { open: bo
             </Select>
           </Field>
           <Field label="Estimate" hint="Minutes">
-            <FieldInput
-              type="number"
-              min={10}
-              max={600}
-              step={5}
-              value={form.estimatedMinutes}
-              onChange={(event) => setForm({ ...form, estimatedMinutes: event.target.value })}
-            />
+            <NumberInput min={10} max={600} step={5} value={form.estimatedMinutes} onValueChange={(value) => setForm({ ...form, estimatedMinutes: value })} />
           </Field>
           <Field label="Due date" hint="Optional">
-            <FieldInput type="date" min={todayKey(timezone)} value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} />
+            <DateInput min={todayKey(timezone)} value={form.dueDate} onValueChange={(value) => setForm({ ...form, dueDate: value })} />
           </Field>
         </div>
 
         {form.dueDate && (
           <Field label="Due time" hint="Used as the hard deadline when planning.">
-            <FieldInput type="time" value={form.dueTime} onChange={(event) => setForm({ ...form, dueTime: event.target.value })} />
+            <TimeInput label="Due time" value={form.dueTime} onValueChange={(value) => setForm({ ...form, dueTime: value })} />
           </Field>
         )}
 

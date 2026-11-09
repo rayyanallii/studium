@@ -6,7 +6,8 @@ import { ACADEMIC_CONTEXTS } from '../../shared/types'
 import { AvailabilityEditor, type DraftWindow } from '../components/AvailabilityEditor'
 import { signOut } from '../lib/auth'
 import { ThemeToggle } from '../components/ThemeProvider'
-import { Alert, Badge, Button, Card, ConfirmDialog, Field, Input, PageHeader, Segmented, Select, Switch, Textarea, useFieldId, useToast } from '../components/ui'
+import { FieldInput, FieldTextarea, NumberInput } from '../components/fields'
+import { Alert, Badge, Button, Card, ConfirmDialog, Field, PageHeader, Segmented, Select, Switch, useToast } from '../components/ui'
 import {
   api,
   useAvailability,
@@ -18,15 +19,6 @@ import {
   useUpdateProfile,
 } from '../lib/api'
 import { humanTimezone } from '../lib/format'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
-function FieldTextarea(props: React.ComponentPropsWithoutRef<typeof Textarea>) {
-  const id = useFieldId()
-  return <Textarea id={id} {...props} />
-}
 
 const FALLBACK_ZONES = ['UTC', 'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Asia/Kolkata', 'Asia/Dubai', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney']
 
@@ -163,13 +155,13 @@ export function Settings() {
           <p className="mt-0.5 text-[14px] text-muted">Defaults used whenever a plan is generated.</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <Field label="Session length" hint="Minutes">
-              <FieldInput type="number" min={15} max={120} step={5} value={prefs.preferredSessionMinutes} onChange={(event) => setPrefs({ ...prefs, preferredSessionMinutes: Number(event.target.value) })} />
+              <NumberInput min={15} max={120} step={5} value={String(prefs.preferredSessionMinutes)} onValueChange={(value) => setPrefs({ ...prefs, preferredSessionMinutes: Number(value) || 15 })} />
             </Field>
             <Field label="Break" hint="Minutes">
-              <FieldInput type="number" min={0} max={45} step={5} value={prefs.breakMinutes} onChange={(event) => setPrefs({ ...prefs, breakMinutes: Number(event.target.value) })} />
+              <NumberInput min={0} max={45} step={5} value={String(prefs.breakMinutes)} onValueChange={(value) => setPrefs({ ...prefs, breakMinutes: Number(value) || 0 })} />
             </Field>
             <Field label="Daily maximum" hint="Minutes">
-              <FieldInput type="number" min={30} max={720} step={15} value={prefs.maxDailyMinutes} onChange={(event) => setPrefs({ ...prefs, maxDailyMinutes: Number(event.target.value) })} />
+              <NumberInput min={30} max={720} step={15} value={String(prefs.maxDailyMinutes)} onValueChange={(value) => setPrefs({ ...prefs, maxDailyMinutes: Number(value) || 30 })} />
             </Field>
             <Field label="Planning horizon">
               <Select value={prefs.planningHorizonDays} onValueChange={(value) => setPrefs({ ...prefs, planningHorizonDays: Number(value) })}>

@@ -3,16 +3,8 @@ import { useState } from 'react'
 import { PRIORITIES, type Assessment } from '../../shared/types'
 import { useMe, useSaveAssessment, useSubjects } from '../lib/api'
 import { combine, toDateInput, toTimeInput, todayKey } from '../lib/format'
-import { Button, Dialog, Field, Input, Select, Textarea, useFieldId, useToast } from './ui'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
-function FieldTextarea(props: React.ComponentPropsWithoutRef<typeof Textarea>) {
-  const id = useFieldId()
-  return <Textarea id={id} {...props} />
-}
+import { DateInput, FieldInput, FieldTextarea, TimeInput } from './fields'
+import { Button, Dialog, Field, Select, useToast } from './ui'
 
 export function AssessmentDialog({ open, onClose, assessment, defaultSubjectId }: { open: boolean; onClose: () => void; assessment?: Assessment | null; defaultSubjectId?: string }) {
   const toast = useToast()
@@ -94,10 +86,10 @@ export function AssessmentDialog({ open, onClose, assessment, defaultSubjectId }
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Date">
-            <FieldInput type="date" min={todayKey(timezone)} value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} />
+            <DateInput min={todayKey(timezone)} value={form.dueDate} onValueChange={(value) => setForm({ ...form, dueDate: value })} />
           </Field>
           <Field label="Start time" hint="Optional.">
-            <FieldInput type="time" value={form.dueTime} onChange={(event) => setForm({ ...form, dueTime: event.target.value })} />
+            <TimeInput label="Start time" value={form.dueTime} onValueChange={(value) => setForm({ ...form, dueTime: value })} />
           </Field>
         </div>
         <Field label="Notes" hint="Optional.">

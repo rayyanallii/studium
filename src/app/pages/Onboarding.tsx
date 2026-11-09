@@ -8,7 +8,8 @@ import { AvailabilityEditor, type DraftWindow } from '../components/Availability
 import { AssessmentDialog } from '../components/AssessmentDialog'
 import { PlanReview } from '../components/PlanReview'
 import { SubjectDialog } from '../components/SubjectDialog'
-import { Alert, Badge, Button, Card, Field, Input, Select, Switch, Textarea, useFieldId } from '../components/ui'
+import { FieldInput, FieldTextarea, NumberInput } from '../components/fields'
+import { Alert, Badge, Button, Card, Field, Select, Switch } from '../components/ui'
 import {
   useAcceptPlan,
   useAssessments,
@@ -33,15 +34,6 @@ const STEPS = [
   { title: 'Preferences', detail: 'How you like to plan' },
   { title: 'Your plan', detail: 'Review and start' },
 ]
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
-function FieldTextarea(props: React.ComponentPropsWithoutRef<typeof Textarea>) {
-  const id = useFieldId()
-  return <Textarea id={id} {...props} />
-}
 
 export function Onboarding() {
   const { data: me } = useMe()
@@ -271,26 +263,24 @@ export function Onboarding() {
               <AvailabilityEditor rules={rules} onChange={setRules} />
               <Card className="grid gap-4 p-4 sm:grid-cols-3">
                 <Field label="Session length" hint="Minutes">
-                  <FieldInput
-                    type="number"
+                  <NumberInput
                     min={15}
                     max={120}
                     step={5}
-                    value={planning.preferredSessionMinutes}
-                    onChange={(event) => setPlanning({ ...planning, preferredSessionMinutes: Number(event.target.value) })}
+                    value={String(planning.preferredSessionMinutes)}
+                    onValueChange={(value) => setPlanning({ ...planning, preferredSessionMinutes: Number(value) || 15 })}
                   />
                 </Field>
                 <Field label="Break" hint="Minutes between sessions">
-                  <FieldInput type="number" min={0} max={45} step={5} value={planning.breakMinutes} onChange={(event) => setPlanning({ ...planning, breakMinutes: Number(event.target.value) })} />
+                  <NumberInput min={0} max={45} step={5} value={String(planning.breakMinutes)} onValueChange={(value) => setPlanning({ ...planning, breakMinutes: Number(value) || 0 })} />
                 </Field>
                 <Field label="Daily maximum" hint="Minutes per day">
-                  <FieldInput
-                    type="number"
+                  <NumberInput
                     min={30}
                     max={720}
                     step={15}
-                    value={planning.maxDailyMinutes}
-                    onChange={(event) => setPlanning({ ...planning, maxDailyMinutes: Number(event.target.value) })}
+                    value={String(planning.maxDailyMinutes)}
+                    onValueChange={(value) => setPlanning({ ...planning, maxDailyMinutes: Number(value) || 30 })}
                   />
                 </Field>
               </Card>

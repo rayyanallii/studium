@@ -4,12 +4,8 @@ import { LockOpen, Play, SkipForward, Trash } from 'lucide-react'
 import type { StudySession } from '../../shared/types'
 import { ApiError, useSaveSession, useSessionAction } from '../lib/api'
 import { combine, minutesLabel, toDateInput, toTimeInput } from '../lib/format'
-import { Alert, Badge, Button, Dialog, Field, Input, useFieldId, useToast } from './ui'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
+import { DateInput, TimeInput } from './fields'
+import { Alert, Badge, Button, Dialog, Field, useToast } from './ui'
 
 type Alternative = { startsAt: number; endsAt: number }
 
@@ -86,13 +82,13 @@ export function SessionDetails({
           <>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Date">
-                <FieldInput type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
+                <DateInput value={form.date} onValueChange={(value) => setForm({ ...form, date: value })} />
               </Field>
               <Field label="Start">
-                <FieldInput type="time" value={form.start} onChange={(event) => setForm({ ...form, start: event.target.value })} />
+                <TimeInput label="Start" value={form.start} onValueChange={(value) => setForm({ ...form, start: value })} />
               </Field>
               <Field label="End">
-                <FieldInput type="time" value={form.end} onChange={(event) => setForm({ ...form, end: event.target.value })} />
+                <TimeInput label="End" value={form.end} onValueChange={(value) => setForm({ ...form, end: value })} />
               </Field>
             </div>
             <p className="-mt-2 text-[14px] text-faint">New times are checked against your availability and other sessions. Moving a session locks it against future replans.</p>

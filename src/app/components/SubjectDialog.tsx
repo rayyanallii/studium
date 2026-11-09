@@ -3,16 +3,8 @@ import { useState } from 'react'
 import { PRIORITIES, SUBJECT_COLORS, type Subject } from '../../shared/types'
 import { useSaveSubject } from '../lib/api'
 import { cx } from '../lib/cx'
-import { Button, Dialog, Field, Input, Select, Textarea, useFieldId, useToast } from './ui'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
-function FieldTextarea(props: React.ComponentPropsWithoutRef<typeof Textarea>) {
-  const id = useFieldId()
-  return <Textarea id={id} {...props} />
-}
+import { FieldInput, FieldTextarea, NumberInput } from './fields'
+import { Button, Dialog, Field, Select, useToast } from './ui'
 
 const blank = {
   name: '',
@@ -95,15 +87,7 @@ export function SubjectDialog({ open, onClose, subject }: { open: boolean; onClo
             </Select>
           </Field>
           <Field label="Weekly target" hint="Hours per week, optional.">
-            <FieldInput
-              type="number"
-              min={0}
-              max={60}
-              step={0.5}
-              value={form.weeklyTargetHours}
-              onChange={(event) => setForm({ ...form, weeklyTargetHours: event.target.value })}
-              placeholder="6"
-            />
+            <NumberInput min={0} max={60} step={0.5} value={form.weeklyTargetHours} onValueChange={(value) => setForm({ ...form, weeklyTargetHours: value })} placeholder="6" />
           </Field>
         </div>
 

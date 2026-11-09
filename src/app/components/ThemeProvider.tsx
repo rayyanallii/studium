@@ -63,7 +63,18 @@ export function ThemeProvider({ preference, onChange, children }: { preference: 
     [theme, resolved, onChange],
   )
 
-  return <ThemeContext.Provider value={value}><FrostTheme appearance="inherit" hasBackground={false} accentColor="blue" grayColor="gray" style={{ minHeight: '100vh', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>{children}</FrostTheme></ThemeContext.Provider>
+  // Frosted UI ships its own font tokens; point them at Inter so component text
+  // never falls back to the system stack.
+  const frostStyle = {
+    minHeight: '100vh',
+    background: 'var(--color-bg)',
+    fontFamily: 'var(--font-sans)',
+    '--default-font-family': 'var(--font-sans)',
+    '--heading-font-family': 'var(--font-sans)',
+    '--strong-font-family': 'var(--font-sans)',
+  }
+
+  return <ThemeContext.Provider value={value}><FrostTheme appearance="inherit" hasBackground={false} accentColor="blue" grayColor="gray" style={frostStyle}>{children}</FrostTheme></ThemeContext.Provider>
 }
 
 export const useTheme = () => useContext(ThemeContext)

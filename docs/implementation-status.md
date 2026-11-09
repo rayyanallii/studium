@@ -1,5 +1,22 @@
 # Studium implementation status
 
+## November 10, 2026: Frosted field set replaces native controls
+
+Every form control now comes from the Frosted UI field set instead of a native
+browser widget. Number entry uses `NumberField` (text input plus Frosted stepper
+buttons), dates use `DatePicker` with its own calendar popover, and times use two
+`Select`s in a 24-hour `HH:mm` pair. Progress-report selectors are custom radio
+cards drawn with Frosted tokens. The old per-file `FieldInput`/`FieldTextarea`
+copies were consolidated into `src/app/components/fields.tsx`, so a field change
+lands in one place. Base CSS hides any residual native spinner, date-picker
+indicator and search-cancel chrome, and the Frosted font tokens point at Inter
+so component text cannot fall back to a system stack.
+
+Verified with `npm run typecheck`, `npm test` (6 passed) and `npm run build`, and
+in a signed-in browser: the task dialog renders the stepper/date/time fields with
+no native chrome, the calendar popover opens, and the availability editor shows
+the paired time selects.
+
 ## November 10, 2026: subjects and topics on Postgres
 
 Subjects and topics are now workspace-owned Postgres rows. `/api/subjects`

@@ -6,15 +6,11 @@ import { useNavigate } from 'react-router'
 import type { StudySession } from '../../shared/types'
 import { GeneratePlanDialog } from '../components/GeneratePlanDialog'
 import { SessionDetails } from '../components/SessionDetails'
-import { Alert, Button, Card, Dialog, EmptyState, Field, Input, PageHeader, Segmented, Select, Skeleton, useFieldId, useToast } from '../components/ui'
+import { DateInput, FieldInput, TimeInput } from '../components/fields'
+import { Alert, Button, Card, Dialog, EmptyState, Field, PageHeader, Segmented, Select, Skeleton, useToast } from '../components/ui'
 import { useMe, usePlanner, useSaveSession, useSubjects } from '../lib/api'
 import { cx } from '../lib/cx'
 import { combine, dateLabel, minutesLabel, nowTimeInput, todayKey } from '../lib/format'
-
-function FieldInput(props: React.ComponentPropsWithoutRef<typeof Input>) {
-  const id = useFieldId()
-  return <Input id={id} {...props} />
-}
 
 export function Planner() {
   const { data: me } = useMe()
@@ -342,13 +338,13 @@ function NewSessionDialog({ onClose, timezone, defaultDate, onSaved }: { onClose
         </Field>
         <div className="grid grid-cols-3 gap-2">
           <Field label="Date">
-            <FieldInput type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
+            <DateInput value={form.date} onValueChange={(value) => setForm({ ...form, date: value })} />
           </Field>
           <Field label="Start">
-            <FieldInput type="time" value={form.start} onChange={(event) => setForm({ ...form, start: event.target.value, end: addHour(event.target.value) })} />
+            <TimeInput label="Start" value={form.start} onValueChange={(value) => setForm({ ...form, start: value, end: addHour(value) })} />
           </Field>
           <Field label="End">
-            <FieldInput type="time" value={form.end} onChange={(event) => setForm({ ...form, end: event.target.value })} />
+            <TimeInput label="End" value={form.end} onValueChange={(value) => setForm({ ...form, end: value })} />
           </Field>
         </div>
         {error && <p className="text-[14px] text-danger">{error.message}</p>}
