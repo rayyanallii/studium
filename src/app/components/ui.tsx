@@ -189,10 +189,10 @@ export function Dialog({ open, onClose, title, description, children, footer, wi
   open: boolean; onClose: () => void; title: string; description?: string; children: ReactNode; footer?: ReactNode; width?: number
 }) {
   return <FrostDialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
-    <FrostDialog.Content style={{ maxWidth: width, width: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto' }} className="study-dialog p-5 sm:p-6">
-      <div className="mb-6 flex items-start justify-between gap-4"><div className="min-w-0"><FrostDialog.Title className="m-0">{title}</FrostDialog.Title>{description && <FrostDialog.Description className="mb-0 mt-2 text-muted">{description}</FrostDialog.Description>}</div><FrostDialog.Close><Button size="icon-sm" variant="ghost" aria-label="Close"><X /></Button></FrostDialog.Close></div>
-      {children}
-      {footer && <div className="mt-6 flex flex-wrap justify-end gap-3">{footer}</div>}
+    <FrostDialog.Content style={{ maxWidth: width, width: 'calc(100vw - 32px)' }} className="study-dialog flex max-h-[calc(100dvh-32px)] flex-col overflow-hidden p-0">
+      <div className="flex items-start justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6"><div className="min-w-0"><FrostDialog.Title className="m-0">{title}</FrostDialog.Title>{description && <FrostDialog.Description className="mb-0 mt-2 text-muted">{description}</FrostDialog.Description>}</div><FrostDialog.Close><Button size="icon-sm" variant="ghost" aria-label="Close"><X /></Button></FrostDialog.Close></div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
+      {footer && <div className="flex flex-wrap justify-end gap-3 border-t border-line px-5 py-4 sm:px-6">{footer}</div>}
     </FrostDialog.Content>
   </FrostDialog.Root>
 }
@@ -262,7 +262,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[60] flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -272,8 +272,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               className={cx(
-                'pointer-events-auto max-w-md rounded-control px-4 py-2.5 text-[15px] font-medium shadow-pop',
-                toast.tone === 'danger' ? 'bg-danger text-white' : 'bg-fg text-bg',
+                'pointer-events-auto max-w-md rounded-control border px-4 py-2.5 text-[15px] font-medium shadow-pop backdrop-blur-xl',
+                toast.tone === 'danger' ? 'border-danger/40 bg-danger text-white' : 'border-line bg-raised/95 text-fg',
               )}
             >
               {toast.message}

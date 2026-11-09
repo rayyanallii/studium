@@ -364,7 +364,7 @@ export function Onboarding() {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button variant="primary" className="h-11 flex-1" onClick={generatePlan} loading={generate.isPending}>
                       <Sparkles />
-                      Generate My First Study Plan
+                      Generate my first study plan
                     </Button>
                     <Button className="h-11" onClick={finish} loading={updateProfile.isPending}>
                       Finish without a plan
@@ -399,22 +399,24 @@ export function Onboarding() {
             <ArrowLeft />
             Back
           </Button>
-          {step < 6 && (
-            <Button
-              variant="primary"
-              onClick={() => (step === 4 ? continueFromAvailability() : saveStep(step + 1))}
-              disabled={!canContinue}
-              loading={updateProfile.isPending || saveAvailability.isPending}
-            >
-              Continue
-              <ArrowRight />
-            </Button>
-          )}
-          {step === 3 && (
-            <button type="button" onClick={() => saveStep(4)} className="text-[14px] text-muted underline-offset-2 hover:underline">
-              Skip for now
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            {step === 3 && (
+              <button type="button" onClick={() => saveStep(4)} className="text-[14px] text-muted underline-offset-2 hover:underline">
+                Skip for now
+              </button>
+            )}
+            {step < 6 && (
+              <Button
+                variant="primary"
+                onClick={() => (step === 4 ? continueFromAvailability() : saveStep(step + 1))}
+                disabled={!canContinue}
+                loading={updateProfile.isPending || saveAvailability.isPending}
+              >
+                Continue
+                <ArrowRight />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

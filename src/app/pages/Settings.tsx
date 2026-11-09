@@ -117,7 +117,7 @@ export function Settings() {
             <Field label="Display name">
               <FieldInput value={profile.displayName} onChange={(event) => setProfile({ ...profile, displayName: event.target.value })} />
             </Field>
-            <Field label="Email" hint="Managed by your sign-in provider.">
+            <Field label="Email" hint="The address you sign in with.">
               <FieldInput value={me.user.email ?? 'Not shared'} disabled />
             </Field>
             <Field label="What are you studying for?">

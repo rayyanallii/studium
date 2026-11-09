@@ -9,9 +9,6 @@ import {
   Settings,
   Timer,
   Library,
-  Layers,
-  NotebookPen,
-  ScanLine,
   Search,
   type LucideIcon,
 } from 'lucide-react'
@@ -27,18 +24,27 @@ import { AccountMenu } from './AccountMenu'
 import { BrandMark } from './BrandMark'
 import { Button, Dialog, Drawer, Input } from './ui'
 
-const NAV: { to: string; label: string; icon: LucideIcon }[] = [
-  { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { to: '/library', label: 'Study library', icon: Library },
-  { to: '/flashcards', label: 'Flashcards', icon: Layers },
-  { to: '/quizzes', label: 'Quizzes', icon: ScanLine },
-  { to: '/notebooks', label: 'AI Notebook', icon: NotebookPen },
-  { to: '/planner', label: 'Planner', icon: CalendarDays },
-  { to: '/subjects', label: 'Subjects', icon: BookOpen },
-  { to: '/tasks', label: 'Tasks', icon: ListChecks },
-  { to: '/focus', label: 'Focus', icon: Timer },
-  { to: '/analytics', label: 'Analytics', icon: ChartNoAxesColumn },
+type NavItem = { to: string; label: string; icon: LucideIcon }
+
+// Flashcards, quizzes and notebooks live inside Study library, so they are not
+// separate destinations in the rail. The routes stay valid for direct links.
+const OVERVIEW: NavItem = { to: '/dashboard', label: 'Overview', icon: LayoutDashboard }
+const SUBJECTS: NavItem = { to: '/subjects', label: 'Subjects', icon: BookOpen }
+const LIBRARY: NavItem = { to: '/library', label: 'Study library', icon: Library }
+const PLANNER: NavItem = { to: '/planner', label: 'Planner', icon: CalendarDays }
+const TASKS: NavItem = { to: '/tasks', label: 'Tasks', icon: ListChecks }
+const FOCUS: NavItem = { to: '/focus', label: 'Focus', icon: Timer }
+const ANALYTICS: NavItem = { to: '/analytics', label: 'Analytics', icon: ChartNoAxesColumn }
+
+const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
+  { items: [OVERVIEW] },
+  { label: 'Study', items: [SUBJECTS, LIBRARY] },
+  { label: 'Plan', items: [PLANNER, TASKS, FOCUS] },
+  { label: 'Progress', items: [ANALYTICS] },
 ]
+const NAV = NAV_GROUPS.flatMap((group) => group.items)
+const MOBILE_PRIMARY = ['/dashboard', '/subjects', '/library', '/planner']
+const MOBILE_MORE = NAV.filter((item) => !MOBILE_PRIMARY.includes(item.to))
 
 export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
   return (
@@ -68,18 +74,23 @@ export function Shell() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-control focus:bg-accent focus:p-3 focus:text-on-accent">Skip to content</a>
       <header className="sticky top-0 z-30 col-span-2 grid h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-line bg-bg px-4 sm:gap-6 lg:grid-cols-[1fr_minmax(240px,400px)_1fr] lg:px-6">
         <Logo className="justify-self-start max-sm:gap-2 max-sm:[&>span:last-child]:text-[22px]" />
-        <button type="button" onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center justify-self-center gap-3 rounded-[14px] bg-surface-2 text-muted sm:h-11 sm:w-full sm:max-w-[400px] sm:justify-start sm:px-4" aria-label="Search workspace"><Search className="size-5 shrink-0" /><span className="hidden sm:inline">Search</span><kbd className="ml-auto hidden rounded-md border border-line-strong px-1.5 py-0.5 text-xs sm:inline">Ctrl K</kbd></button>
+        <button type="button" onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center justify-self-end gap-3 rounded-[14px] bg-surface-2 text-muted sm:h-11 sm:w-full sm:max-w-[400px] sm:justify-start sm:justify-self-center sm:px-4" aria-label="Search workspace"><Search className="size-5 shrink-0" /><span className="hidden sm:inline">Search</span><kbd className="ml-auto hidden rounded-md border border-line-strong px-1.5 py-0.5 text-xs sm:inline">Ctrl K</kbd></button>
         <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><AccountMenu /></div>
       </header>
       <aside className="sticky top-[72px] hidden h-[calc(100vh-72px)] flex-col border-r border-line bg-bg px-3 py-4 lg:flex">
         <p className="px-4 text-[14px] font-medium text-faint">Personal workspace</p>
-        <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto" aria-label="Main">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className={state => cx(linkClass(state), to === '/planner' && 'mt-5')}>
-              <Icon />
-              {label}
-              {to === '/tasks' && Boolean(me?.counts.openTasks) && <span className="ml-auto text-[11px] tabular text-muted">{me?.counts.openTasks}</span>}
-            </NavLink>
+        <nav className="mt-2 flex min-h-0 flex-1 flex-col overflow-y-auto pb-2" aria-label="Main">
+          {NAV_GROUPS.map((group, index) => (
+            <div key={group.label ?? index} className="flex flex-col gap-1">
+              {group.label && <p className="px-4 pb-1 pt-5 text-[13px] font-medium text-faint">{group.label}</p>}
+              {group.items.map(({ to, label, icon: Icon }) => (
+                <NavLink key={to} to={to} className={linkClass}>
+                  <Icon />
+                  {label}
+                  {to === '/tasks' && Boolean(me?.counts.openTasks) && <span className="ml-auto text-[11px] tabular text-muted">{me?.counts.openTasks}</span>}
+                </NavLink>
+              ))}
+            </div>
           ))}
           <div className="my-3 h-px shrink-0 bg-line" />
           <NavLink to="/settings" className={linkClass}>
@@ -98,7 +109,7 @@ export function Shell() {
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" aria-label="Mobile">
         <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-1.5">
-          {NAV.slice(0, 4).map(({ to, label, icon: Icon }) => (
+          {NAV.filter((item) => MOBILE_PRIMARY.includes(item.to)).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -127,7 +138,7 @@ export function Shell() {
       {searchOpen && <WorkspaceSearch onClose={() => setSearchOpen(false)} />}
       <Drawer open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
         <div className="flex flex-col gap-1 p-3">
-          {NAV.slice(4).map(({ to, label, icon: Icon }) => (
+          {MOBILE_MORE.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} onClick={() => setMoreOpen(false)} className={linkClass}>
               <Icon />
               {label}

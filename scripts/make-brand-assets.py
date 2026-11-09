@@ -1,10 +1,10 @@
 """Turn the uploaded Studium logo into web-ready brand assets.
 
-The artwork is flat and opaque on a white canvas. Keying *all* white pixels out
-would punch holes in the book pages, so only the white region connected to the
-image border is made transparent (a flood fill). The interior page white and the
-soft shadow stay intact, which lets the mark sit directly on the dark app surface
-without a white sticker behind it.
+The artwork already ships with a transparent canvas, but its hidden pixels store
+black RGB values. Flattening or re-keying by colour resurrects that canvas as a
+dark tile and can eat the white book pages that touch it, so the alpha channel is
+the only source of truth here: trim to it, soften stray edge pixels, and resize.
+The mark then sits directly on the app surface in both themes.
 
     python scripts/make-brand-assets.py
 
@@ -14,7 +14,6 @@ Outputs into public/brand/:
     studium-touch.png     180px mark on white (iOS icons need an opaque canvas)
 """
 
-from collections import deque
 from pathlib import Path
 
 from PIL import Image
@@ -22,45 +21,13 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "Studium Logo.png"
 OUT = ROOT / "public" / "brand"
-WHITE_CUTOFF = 232
+EDGE_CUTOFF = 8
 
 
 def remove_background(image: Image.Image) -> Image.Image:
-    rgb = image.convert("RGB")
-    width, height = rgb.size
-    pixels = rgb.load()
-    outside = bytearray(width * height)
-    queue: deque[tuple[int, int]] = deque()
-
-    def is_background(x: int, y: int) -> bool:
-        red, green, blue = pixels[x, y]
-        return red >= WHITE_CUTOFF and green >= WHITE_CUTOFF and blue >= WHITE_CUTOFF
-
-    def push(x: int, y: int) -> None:
-        if 0 <= x < width and 0 <= y < height and not outside[y * width + x] and is_background(x, y):
-            outside[y * width + x] = 1
-            queue.append((x, y))
-
-    for x in range(width):
-        push(x, 0)
-        push(x, height - 1)
-    for y in range(height):
-        push(0, y)
-        push(width - 1, y)
-
-    while queue:
-        x, y = queue.popleft()
-        push(x + 1, y)
-        push(x - 1, y)
-        push(x, y + 1)
-        push(x, y - 1)
-
-    result = rgb.convert("RGBA")
-    alpha = result.load()
-    for index, flag in enumerate(outside):
-        if flag:
-            alpha[index % width, index // width] = (0, 0, 0, 0)
-    return result
+    rgba = image.convert("RGBA")
+    rgba.putalpha(rgba.getchannel("A").point(lambda value: 0 if value < EDGE_CUTOFF else value))
+    return rgba
 
 
 def main() -> None:
