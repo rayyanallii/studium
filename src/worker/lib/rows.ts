@@ -1,10 +1,14 @@
 // Row shapes and mapping helpers. Every loader is scoped to the signed-in
 // user; there is no query in this file that accepts a user id from a client.
+//
+// Subjects and topics live in Postgres, while tasks, assessments and sessions
+// still live in D1. A `SubjectDirectory` carries the Postgres labels into the
+// D1 loaders, which replaces the cross-database JOINs used before the port.
 
 import { DateTime } from 'luxon'
 import type { FreebuffUser } from '@freebuff/auth'
 
-import type { Assessment, Priority, Profile, SessionStatus, StudySession, Subject, Task } from '../../shared/types'
+import type { Assessment, Priority, Profile, SessionStatus, StudySession, Task } from '../../shared/types'
 import { bool, many, num, one, text } from '../db'
 import { localDate } from './dates'
 
@@ -32,18 +36,6 @@ export interface PrefsRow {
   updated_at: number
 }
 
-export interface SubjectRow {
-  id: string
-  name: string
-  description: string | null
-  color: string
-  priority: string
-  difficulty: number
-  weekly_target_minutes: number | null
-  created_at: number
-  updated_at: number
-}
-
 export interface TaskRow {
   id: string
   subject_id: string
@@ -58,9 +50,6 @@ export interface TaskRow {
   created_at: number
   updated_at: number
   scheduled_minutes?: number
-  subject_name?: string
-  subject_color?: string
-  topic_name?: string | null
 }
 
 export interface AssessmentRow {
@@ -72,8 +61,6 @@ export interface AssessmentRow {
   priority: string
   created_at: number
   updated_at: number
-  subject_name?: string
-  subject_color?: string
 }
 
 export interface SessionRow {
@@ -89,8 +76,14 @@ export interface SessionRow {
   status: string
   is_locked: number
   completed_at: number | null
-  subject_name: string
-  subject_color: string
+}
+
+/** Subject labels keyed by id, used where a D1 row points at a Postgres subject. */
+export type SubjectLookup = Map<string, { name: string; color: string }>
+
+export interface SubjectDirectory {
+  subjects: SubjectLookup
+  topics: Map<string, string>
 }
 
 export const mapProfile = (row: ProfileRow): Profile => ({
@@ -140,88 +133,14 @@ export function startOfWeek(timestamp: number, timezone: string): number {
   return DateTime.fromMillis(timestamp, { zone: timezone }).startOf('week').toMillis()
 }
 
-export async function loadSubjects(db: D1Database, ownerSub: string, timezone: string, now: number): Promise<Subject[]> {
-  const rows = await many<SubjectRow>(
-    db,
-    'SELECT id, name, description, color, priority, difficulty, weekly_target_minutes, created_at, updated_at FROM subjects WHERE owner_sub = ? ORDER BY lower(name)',
-    ownerSub,
-  )
-  if (rows.length === 0) return []
-
-  const weekFrom = startOfWeek(now, timezone)
-  const weekTo = DateTime.fromMillis(weekFrom, { zone: timezone }).plus({ days: 7 }).toMillis()
-
-  const [openTasks, topicTotals, studied, planned, nextAssessment] = await Promise.all([
-    many<{ subject_id: string; n: number }>(db, "SELECT subject_id, COUNT(*) AS n FROM tasks WHERE owner_sub = ? AND status IN ('todo','in_progress') GROUP BY subject_id", ownerSub),
-    many<{ subject_id: string; total: number; done: number }>(
-      db,
-      "SELECT subject_id, COUNT(*) AS total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS done FROM topics WHERE owner_sub = ? GROUP BY subject_id",
-      ownerSub,
-    ),
-    many<{ subject_id: string; minutes: number }>(
-      db,
-      `SELECT ss.subject_id, COALESCE(SUM(ss.actual_minutes), 0) AS minutes
-       FROM study_sessions ss
-       WHERE ss.owner_sub = ? AND ss.actual_minutes > 0 AND ss.starts_at >= ? AND ss.starts_at < ?
-       GROUP BY ss.subject_id`,
-      ownerSub,
-      weekFrom,
-      weekTo,
-    ),
-    many<{ subject_id: string; minutes: number }>(
-      db,
-      `SELECT subject_id, COALESCE(SUM(planned_minutes), 0) AS minutes
-       FROM study_sessions WHERE owner_sub = ? AND status = 'planned' AND starts_at >= ? AND starts_at < ?
-       GROUP BY subject_id`,
-      ownerSub,
-      weekFrom,
-      weekTo,
-    ),
-    many<{ subject_id: string; next_at: number }>(
-      db,
-      'SELECT subject_id, MIN(due_at) AS next_at FROM assessments WHERE owner_sub = ? AND due_at >= ? GROUP BY subject_id',
-      ownerSub,
-      now - 86_400_000,
-    ),
-  ])
-
-  const byId = <T extends { subject_id: string }>(list: T[]) => new Map(list.map((item) => [item.subject_id, item]))
-  const taskMap = byId(openTasks)
-  const topicMap = byId(topicTotals)
-  const studiedMap = byId(studied)
-  const plannedMap = byId(planned)
-  const assessmentMap = byId(nextAssessment)
-
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    description: text(row.description),
-    color: row.color,
-    priority: row.priority as Priority,
-    difficulty: num(row.difficulty, 3),
-    weeklyTargetMinutes: row.weekly_target_minutes === null ? null : num(row.weekly_target_minutes),
-    createdAt: num(row.created_at),
-    updatedAt: num(row.updated_at),
-    stats: {
-      openTasks: num(taskMap.get(row.id)?.n),
-      topics: num(topicMap.get(row.id)?.total),
-      topicsDone: num(topicMap.get(row.id)?.done),
-      studiedWeekMinutes: num(studiedMap.get(row.id)?.minutes),
-      plannedWeekMinutes: num(plannedMap.get(row.id)?.minutes),
-      nextAssessmentAt: assessmentMap.get(row.id)?.next_at ?? null,
-    },
-  }))
-}
-
 const TASK_SELECT = `
-  SELECT t.*, s.name AS subject_name, s.color AS subject_color, tp.name AS topic_name,
+  SELECT t.*,
     COALESCE((SELECT SUM(ss.planned_minutes) FROM study_sessions ss
       WHERE ss.task_id = t.id AND ss.owner_sub = t.owner_sub AND ss.status = 'planned' AND ss.starts_at > ?), 0) AS scheduled_minutes
-  FROM tasks t
-  JOIN subjects s ON s.id = t.subject_id AND s.owner_sub = t.owner_sub
-  LEFT JOIN topics tp ON tp.id = t.topic_id AND tp.owner_sub = t.owner_sub`
+  FROM tasks t`
 
-export function mapTask(row: TaskRow): Task {
+export function mapTask(row: TaskRow, directory: SubjectDirectory): Task {
+  const subject = directory.subjects.get(row.subject_id)
   return {
     id: row.id,
     subjectId: row.subject_id,
@@ -236,13 +155,19 @@ export function mapTask(row: TaskRow): Task {
     scheduledMinutes: num(row.scheduled_minutes),
     createdAt: num(row.created_at),
     updatedAt: num(row.updated_at),
-    subjectName: row.subject_name,
-    subjectColor: row.subject_color,
-    topicName: row.topic_name ?? undefined,
+    subjectName: subject?.name ?? 'Deleted subject',
+    subjectColor: subject?.color ?? '#5C6070',
+    topicName: row.topic_id ? directory.topics.get(row.topic_id) : undefined,
   }
 }
 
-export async function loadTasks(db: D1Database, ownerSub: string, now: number, options: { openOnly?: boolean; subjectId?: string } = {}): Promise<Task[]> {
+export async function loadTasks(
+  db: D1Database,
+  ownerSub: string,
+  now: number,
+  directory: SubjectDirectory,
+  options: { openOnly?: boolean; subjectId?: string } = {},
+): Promise<Task[]> {
   const clauses = ['t.owner_sub = ?']
   const params: unknown[] = [now, ownerSub]
   if (options.openOnly) clauses.push("t.status IN ('todo','in_progress')")
@@ -251,42 +176,40 @@ export async function loadTasks(db: D1Database, ownerSub: string, now: number, o
     params.push(options.subjectId)
   }
   const rows = await many<TaskRow>(db, `${TASK_SELECT} WHERE ${clauses.join(' AND ')} ORDER BY t.created_at DESC`, ...params)
-  return rows.map(mapTask)
+  return rows.filter((row) => directory.subjects.has(row.subject_id)).map((row) => mapTask(row, directory))
 }
 
-export async function loadTask(db: D1Database, ownerSub: string, taskId: string, now: number): Promise<Task | null> {
+export async function loadTask(db: D1Database, ownerSub: string, taskId: string, now: number, directory: SubjectDirectory): Promise<Task | null> {
   const row = await one<TaskRow>(db, `${TASK_SELECT} WHERE t.owner_sub = ? AND t.id = ?`, now, ownerSub, taskId)
-  return row ? mapTask(row) : null
+  if (!row || !directory.subjects.has(row.subject_id)) return null
+  return mapTask(row, directory)
 }
 
-export async function loadAssessments(db: D1Database, ownerSub: string): Promise<Assessment[]> {
-  const rows = await many<AssessmentRow>(
-    db,
-    `SELECT a.*, s.name AS subject_name, s.color AS subject_color
-     FROM assessments a JOIN subjects s ON s.id = a.subject_id AND s.owner_sub = a.owner_sub
-     WHERE a.owner_sub = ? ORDER BY a.due_at`,
-    ownerSub,
-  )
-  return rows.map((row) => ({
-    id: row.id,
-    subjectId: row.subject_id,
-    title: row.title,
-    description: text(row.description),
-    dueAt: num(row.due_at),
-    priority: row.priority as Priority,
-    createdAt: num(row.created_at),
-    updatedAt: num(row.updated_at),
-    subjectName: row.subject_name,
-    subjectColor: row.subject_color,
-  }))
+export async function loadAssessments(db: D1Database, ownerSub: string, directory: SubjectDirectory): Promise<Assessment[]> {
+  const rows = await many<AssessmentRow>(db, 'SELECT * FROM assessments WHERE owner_sub = ? ORDER BY due_at', ownerSub)
+  return rows
+    .filter((row) => directory.subjects.has(row.subject_id))
+    .map((row) => {
+      const subject = directory.subjects.get(row.subject_id)
+      return {
+        id: row.id,
+        subjectId: row.subject_id,
+        title: row.title,
+        description: text(row.description),
+        dueAt: num(row.due_at),
+        priority: row.priority as Priority,
+        createdAt: num(row.created_at),
+        updatedAt: num(row.updated_at),
+        subjectName: subject?.name ?? 'Deleted subject',
+        subjectColor: subject?.color ?? '#5C6070',
+      }
+    })
 }
 
-export const SESSION_SELECT = `
-  SELECT ss.*, s.name AS subject_name, s.color AS subject_color
-  FROM study_sessions ss
-  JOIN subjects s ON s.id = ss.subject_id AND s.owner_sub = ss.owner_sub`
+export const SESSION_SELECT = 'SELECT ss.* FROM study_sessions ss'
 
-export function mapSession(row: SessionRow): StudySession {
+export function mapSession(row: SessionRow, directory: SubjectDirectory): StudySession {
+  const subject = directory.subjects.get(row.subject_id)
   return {
     id: row.id,
     planId: row.plan_id,
@@ -300,14 +223,15 @@ export function mapSession(row: SessionRow): StudySession {
     status: row.status as SessionStatus,
     isLocked: bool(row.is_locked),
     completedAt: row.completed_at === null ? null : num(row.completed_at),
-    subjectName: row.subject_name,
-    subjectColor: row.subject_color,
+    subjectName: subject?.name ?? 'Deleted subject',
+    subjectColor: subject?.color ?? '#5C6070',
   }
 }
 
 export async function loadSessions(
   db: D1Database,
   ownerSub: string,
+  directory: SubjectDirectory,
   filter: { from?: number; to?: number; statuses?: string[]; subjectId?: string; limit?: number } = {},
 ): Promise<StudySession[]> {
   const clauses = ['ss.owner_sub = ?']
@@ -330,12 +254,13 @@ export async function loadSessions(
   }
   const limit = Math.min(500, Math.max(1, filter.limit ?? 400))
   const rows = await many<SessionRow>(db, `${SESSION_SELECT} WHERE ${clauses.join(' AND ')} ORDER BY ss.starts_at LIMIT ${limit}`, ...params)
-  return rows.map(mapSession)
+  return rows.filter((row) => directory.subjects.has(row.subject_id)).map((row) => mapSession(row, directory))
 }
 
-export async function loadSession(db: D1Database, ownerSub: string, sessionId: string): Promise<StudySession | null> {
+export async function loadSession(db: D1Database, ownerSub: string, sessionId: string, directory: SubjectDirectory): Promise<StudySession | null> {
   const row = await one<SessionRow>(db, `${SESSION_SELECT} WHERE ss.owner_sub = ? AND ss.id = ?`, ownerSub, sessionId)
-  return row ? mapSession(row) : null
+  if (!row || !directory.subjects.has(row.subject_id)) return null
+  return mapSession(row, directory)
 }
 
 /** Planned sessions whose end has passed become `missed` so every screen agrees. */

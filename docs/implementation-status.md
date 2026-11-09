@@ -1,5 +1,31 @@
 # Studium implementation status
 
+## November 10, 2026: subjects and topics on Postgres
+
+Subjects and topics are now workspace-owned Postgres rows. `/api/subjects`
+lists, creates, updates and deletes them under the user's JWT, so RLS authorises
+every write; topic create/update/delete and the 40-subject cap moved with them.
+Deleting a subject soft-deletes the row (`deleted_at`) and removes its topics,
+open tasks, assessments and future unlocked sessions, while completed sessions
+keep their history.
+
+Tasks, assessments, sessions, focus runs and analytics still live in D1 but
+reference a subject by id, so their loaders no longer join a `subjects` table in
+D1. They receive a `SubjectDirectory` loaded from Postgres (id, name, colour and
+topic names) and skip rows whose subject was deleted. The `/me` subject count,
+the sample workspace and the planner inputs all use the same directory. The
+localhost development identity keeps its D1 subjects, so the app still runs
+without Supabase credentials.
+
+The subject screens were re-spaced against the Whop references: more generous
+card padding, a divided meta row instead of stacked snippets, larger subject
+names, quieter meta text and consistent 4-unit grid gaps.
+
+Verified with `npm run typecheck`, `npm test` (6 passed), `npm run check:schema`
+(11 passed) and `npm run build`. The hosted-database smoke test for this slice
+has not been run yet; the schema/RLS checks and the build cover the code paths,
+not a live two-account session.
+
 ## November 10, 2026: account flow and Supabase backend foundation
 
 Authentication is now a complete account flow rather than a single opt-in page.

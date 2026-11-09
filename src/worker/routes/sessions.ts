@@ -6,17 +6,29 @@ import type { AppContext } from '../env'
 import { suggestSlots, slotProblem } from '../lib/availability'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { ensureProfile, loadSession, loadSessions } from '../lib/rows'
+import type { SubjectDirectory } from '../lib/rows'
+import { subjectDirectory, subjectExists, subjectSource } from '../lib/subjects'
 
 export const sessions = new Hono<AppContext>()
 
-async function validateLinks(db: D1Database, ownerSub: string, subjectId: string, taskId: string | null | undefined) {
-  const subject = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', subjectId, ownerSub)
-  if (!subject) return 'That subject does not exist in your workspace.'
+async function validateLinks(source: Awaited<ReturnType<typeof subjectSource>>, db: D1Database, ownerSub: string, subjectId: string, taskId: string | null | undefined) {
+  if (!(await subjectExists(source, db, ownerSub, subjectId))) return 'That subject does not exist in your workspace.'
   if (taskId) {
     const task = await one<{ id: string }>(db, 'SELECT id FROM tasks WHERE id = ? AND owner_sub = ? AND subject_id = ?', taskId, ownerSub, subjectId)
     if (!task) return 'That task does not belong to the chosen subject.'
   }
   return null
+}
+
+async function context(c: Context<AppContext>): Promise<{ db: D1Database; ownerSub: string; directory: SubjectDirectory; source: Awaited<ReturnType<typeof subjectSource>> }> {
+  const user = c.get('user')
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  return {
+    db: c.get('db'),
+    ownerSub: user.sub,
+    source,
+    directory: await subjectDirectory(source, c.get('db'), user.sub),
+  }
 }
 
 async function conflictResponse(c: Context<AppContext>, message: string, durationMinutes: number, afterMs: number) {
@@ -38,12 +50,11 @@ async function conflictResponse(c: Context<AppContext>, message: string, duratio
 }
 
 sessions.get('/', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
+  const { db, ownerSub, directory } = await context(c)
   const now = Date.now()
   const from = Number(c.req.query('from'))
   const to = Number(c.req.query('to'))
-  const items = await loadSessions(db, user.sub, {
+  const items = await loadSessions(db, ownerSub, directory, {
     from: Number.isFinite(from) && from > 0 ? from : now - 7 * 86_400_000,
     to: Number.isFinite(to) && to > 0 ? to : now + 45 * 86_400_000,
     subjectId: c.req.query('subjectId') || undefined,
@@ -65,8 +76,9 @@ sessions.post('/', async (c) => {
   const parsed = await parseBody(c, createSchema)
   if (isResponse(parsed)) return parsed
   const { profile } = await ensureProfile(db, user)
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
 
-  const linkProblem = await validateLinks(db, user.sub, parsed.subjectId, parsed.taskId)
+  const linkProblem = await validateLinks(source, db, user.sub, parsed.subjectId, parsed.taskId)
   if (linkProblem) return fail(c, 422, 'invalid_link', linkProblem)
 
   const problem = await slotProblem(db, user.sub, profile.timezone, parsed.startsAt, parsed.endsAt)
@@ -97,7 +109,8 @@ sessions.post('/', async (c) => {
     now,
     now,
   )
-  return reply(c, { session: await loadSession(db, user.sub, sessionId) }, 201)
+  const directory = await subjectDirectory(source, db, user.sub)
+  return reply(c, { session: await loadSession(db, user.sub, sessionId, directory) }, 201)
 })
 
 const updateSchema = z.object({
@@ -109,27 +122,26 @@ const updateSchema = z.object({
 })
 
 sessions.patch('/:id', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
+  const { db, ownerSub, directory, source } = await context(c)
   const parsed = await parseBody(c, updateSchema)
   if (isResponse(parsed)) return parsed
   const sessionId = c.req.param('id')
-  const existing = await loadSession(db, user.sub, sessionId)
+  const existing = await loadSession(db, ownerSub, sessionId, directory)
   if (!existing) return fail(c, 404, 'not_found', 'That study session no longer exists.')
   if (existing.status === 'completed' && (parsed.startsAt || parsed.endsAt)) {
     return fail(c, 409, 'already_completed', 'Completed sessions keep their recorded time.')
   }
-  const { profile } = await ensureProfile(db, user)
+  const { profile } = await ensureProfile(db, c.get('user'))
 
   const startsAt = parsed.startsAt ?? existing.startsAt
   const endsAt = parsed.endsAt ?? existing.endsAt
   const timeChanged = startsAt !== existing.startsAt || endsAt !== existing.endsAt
   if (timeChanged) {
-    const problem = await slotProblem(db, user.sub, profile.timezone, startsAt, endsAt, sessionId)
+    const problem = await slotProblem(db, ownerSub, profile.timezone, startsAt, endsAt, sessionId)
     if (problem) return conflictResponse(c, problem, Math.max(10, Math.round((endsAt - startsAt) / 60_000)), startsAt)
   }
   if (parsed.taskId) {
-    const linkProblem = await validateLinks(db, user.sub, existing.subjectId, parsed.taskId)
+    const linkProblem = await validateLinks(source, db, ownerSub, existing.subjectId, parsed.taskId)
     if (linkProblem) return fail(c, 422, 'invalid_link', linkProblem)
   }
 
@@ -150,9 +162,9 @@ sessions.patch('/:id', async (c) => {
   if (parsed.isLocked !== undefined) assign('is_locked', parsed.isLocked ? 1 : 0)
   if (fields.length === 0) return reply(c, { session: existing })
   assign('updated_at', Date.now())
-  params.push(sessionId, user.sub)
+  params.push(sessionId, ownerSub)
   await exec(db, `UPDATE study_sessions SET ${fields.join(', ')} WHERE id = ? AND owner_sub = ?`, ...params)
-  return reply(c, { session: await loadSession(db, user.sub, sessionId) })
+  return reply(c, { session: await loadSession(db, ownerSub, sessionId, directory) })
 })
 
 const completeSchema = z.object({
@@ -161,12 +173,11 @@ const completeSchema = z.object({
 })
 
 sessions.post('/:id/complete', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
+  const { db, ownerSub, directory } = await context(c)
   const parsed = await parseBody(c, completeSchema)
   if (isResponse(parsed)) return parsed
   const sessionId = c.req.param('id')
-  const existing = await loadSession(db, user.sub, sessionId)
+  const existing = await loadSession(db, ownerSub, sessionId, directory)
   if (!existing) return fail(c, 404, 'not_found', 'That study session no longer exists.')
 
   const now = Date.now()
@@ -174,56 +185,53 @@ sessions.post('/:id/complete', async (c) => {
   const statements: D1PreparedStatement[] = [
     db
       .prepare("UPDATE study_sessions SET status = 'completed', completed_at = ?, actual_minutes = ?, updated_at = ? WHERE id = ? AND owner_sub = ?")
-      .bind(now, recorded, now, sessionId, user.sub),
+      .bind(now, recorded, now, sessionId, ownerSub),
   ]
   if (existing.taskId) {
     statements.push(
       db
         .prepare('UPDATE tasks SET completed_minutes = MIN(estimated_minutes, completed_minutes + ?), updated_at = ? WHERE id = ? AND owner_sub = ?')
-        .bind(Math.round((recorded - existing.actualMinutes) > 0 ? recorded - existing.actualMinutes : 0), now, existing.taskId, user.sub),
+        .bind(Math.round((recorded - existing.actualMinutes) > 0 ? recorded - existing.actualMinutes : 0), now, existing.taskId, ownerSub),
     )
     if (parsed.markTaskComplete) {
       statements.push(
         db
           .prepare("UPDATE tasks SET status = 'completed', completed_minutes = estimated_minutes, updated_at = ? WHERE id = ? AND owner_sub = ?")
-          .bind(now, existing.taskId, user.sub),
+          .bind(now, existing.taskId, ownerSub),
       )
     }
   }
   await db.batch(statements)
-  return reply(c, { session: await loadSession(db, user.sub, sessionId) })
+  return reply(c, { session: await loadSession(db, ownerSub, sessionId, directory) })
 })
 
 sessions.post('/:id/skip', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
+  const { db, ownerSub, directory } = await context(c)
   const sessionId = c.req.param('id')
-  const existing = await loadSession(db, user.sub, sessionId)
+  const existing = await loadSession(db, ownerSub, sessionId, directory)
   if (!existing) return fail(c, 404, 'not_found', 'That study session no longer exists.')
   if (existing.status === 'completed') return fail(c, 409, 'already_completed', 'Completed sessions cannot be skipped.')
-  await exec(db, "UPDATE study_sessions SET status = 'skipped', updated_at = ? WHERE id = ? AND owner_sub = ?", Date.now(), sessionId, user.sub)
-  return reply(c, { session: await loadSession(db, user.sub, sessionId), suggestsReplan: true })
+  await exec(db, "UPDATE study_sessions SET status = 'skipped', updated_at = ? WHERE id = ? AND owner_sub = ?", Date.now(), sessionId, ownerSub)
+  return reply(c, { session: await loadSession(db, ownerSub, sessionId, directory), suggestsReplan: true })
 })
 
 sessions.delete('/:id', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
+  const { db, ownerSub, directory } = await context(c)
   const sessionId = c.req.param('id')
-  const existing = await loadSession(db, user.sub, sessionId)
+  const existing = await loadSession(db, ownerSub, sessionId, directory)
   if (!existing) return fail(c, 404, 'not_found', 'That study session no longer exists.')
   if (existing.status === 'completed') return fail(c, 409, 'already_completed', 'Completed sessions are part of your study history and cannot be deleted.')
-  await exec(db, 'DELETE FROM study_sessions WHERE id = ? AND owner_sub = ?', sessionId, user.sub)
+  await exec(db, 'DELETE FROM study_sessions WHERE id = ? AND owner_sub = ?', sessionId, ownerSub)
   return reply(c, { deleted: true })
 })
 
 /** Sessions for one calendar range plus the totals the header shows. */
 sessions.get('/summary', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
+  const { db, ownerSub, directory } = await context(c)
   const now = Date.now()
   const from = Number(c.req.query('from'))
   const to = Number(c.req.query('to'))
-  const items = await loadSessions(db, user.sub, {
+  const items = await loadSessions(db, ownerSub, directory, {
     from: Number.isFinite(from) && from > 0 ? from : now - 86_400_000,
     to: Number.isFinite(to) && to > 0 ? to : now + 7 * 86_400_000,
   })
@@ -240,10 +248,9 @@ sessions.get('/summary', async (c) => {
 })
 
 sessions.get('/:id', async (c) => {
-  const user = c.get('user')
-  const db = c.get('db')
-  const session = await loadSession(db, user.sub, c.req.param('id'))
+  const { db, ownerSub, directory } = await context(c)
+  const session = await loadSession(db, ownerSub, c.req.param('id'), directory)
   if (!session) return fail(c, 404, 'not_found', 'That study session no longer exists.')
-  const runs = await c.get('db').prepare('SELECT COUNT(*) AS n FROM focus_runs WHERE owner_sub = ? AND study_session_id = ?').bind(user.sub, session.id).first<{ n: number }>()
+  const runs = await db.prepare('SELECT COUNT(*) AS n FROM focus_runs WHERE owner_sub = ? AND study_session_id = ?').bind(ownerSub, session.id).first<{ n: number }>()
   return reply(c, { session, focusRuns: num(runs?.n) })
 })

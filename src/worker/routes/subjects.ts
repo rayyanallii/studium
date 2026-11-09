@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 
-import { exec, id, many, num, one } from '../db'
 import type { AppContext } from '../env'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
-import { ensureProfile, loadSubjects } from '../lib/rows'
-import type { Topic } from '../../shared/types'
+import { ensureProfile } from '../lib/rows'
+import { createTopic, deleteTopic, listTopics, loadSubjects, subjectExists, subjectSource, subjectRecords, updateTopic } from '../lib/subjects'
+import { toWorkspaceError } from '../lib/pg'
 
 export const subjects = new Hono<AppContext>()
 
@@ -26,8 +26,13 @@ subjects.get('/', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
   const { profile } = await ensureProfile(db, user)
-  const items = await loadSubjects(db, user.sub, profile.timezone, Date.now())
-  return reply(c, { items })
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    const items = await loadSubjects(db, user.sub, profile.timezone, Date.now(), source)
+    return reply(c, { items })
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not load your subjects.')
+  }
 })
 
 subjects.post('/', async (c) => {
@@ -35,26 +40,38 @@ subjects.post('/', async (c) => {
   const db = c.get('db')
   const parsed = await parseBody(c, createSchema)
   if (isResponse(parsed)) return parsed
-  const existing = await one<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM subjects WHERE owner_sub = ? AND deleted_at IS NULL', user.sub)
-  if (num(existing?.n) >= 40) return fail(c, 409, 'subject_limit', 'Forty subjects is the limit for one workspace.')
 
-  const now = Date.now()
-  const subjectId = id()
-  await exec(
-    db,
-    'INSERT INTO subjects (id, owner_sub, name, description, color, priority, difficulty, weekly_target_minutes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    subjectId,
-    user.sub,
-    parsed.name,
-    parsed.description ?? null,
-    parsed.color,
-    parsed.priority,
-    parsed.difficulty,
-    parsed.weeklyTargetMinutes ?? null,
-    now,
-    now,
-  )
-  return reply(c, { id: subjectId }, 201)
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    const existing = await subjectRecords(source, db, user.sub)
+    if (existing.length >= 40) return fail(c, 409, 'subject_limit', 'Forty subjects is the limit for one workspace.')
+
+    const subjectId = crypto.randomUUID()
+    if (source.pg && source.workspaceId) {
+      const { error } = await source.pg.from('subjects').insert({
+        id: subjectId,
+        workspace_id: source.workspaceId,
+        name: parsed.name,
+        description: parsed.description ?? null,
+        color: parsed.color,
+        priority: parsed.priority,
+        difficulty: parsed.difficulty,
+        weekly_target_minutes: parsed.weeklyTargetMinutes ?? null,
+      })
+      if (error) throw toWorkspaceError(error)
+    } else {
+      const now = Date.now()
+      await db
+        .prepare(
+          'INSERT INTO subjects (id, owner_sub, name, description, color, priority, difficulty, weekly_target_minutes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        )
+        .bind(subjectId, user.sub, parsed.name, parsed.description ?? null, parsed.color, parsed.priority, parsed.difficulty, parsed.weeklyTargetMinutes ?? null, now, now)
+        .run()
+    }
+    return reply(c, { id: subjectId }, 201)
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not add the subject.')
+  }
 })
 
 subjects.get('/:id', async (c) => {
@@ -62,27 +79,16 @@ subjects.get('/:id', async (c) => {
   const db = c.get('db')
   const { profile } = await ensureProfile(db, user)
   const subjectId = c.req.param('id')
-  const items = await loadSubjects(db, user.sub, profile.timezone, Date.now())
-  const subject = items.find((item) => item.id === subjectId)
-  if (!subject) return fail(c, 404, 'not_found', 'That subject no longer exists.')
-
-  const topics = await many<{ id: string; subject_id: string; name: string; description: string | null; estimated_minutes: number | null; status: string; created_at: number; updated_at: number }>(
-    db,
-    'SELECT * FROM topics WHERE owner_sub = ? AND subject_id = ? ORDER BY created_at',
-    user.sub,
-    subjectId,
-  )
-  const mapped: Topic[] = topics.map((row) => ({
-    id: row.id,
-    subjectId: row.subject_id,
-    name: row.name,
-    description: row.description,
-    estimatedMinutes: row.estimated_minutes === null ? null : Number(row.estimated_minutes),
-    status: row.status as Topic['status'],
-    createdAt: Number(row.created_at),
-    updatedAt: Number(row.updated_at),
-  }))
-  return reply(c, { subject, topics: mapped })
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    const items = await loadSubjects(db, user.sub, profile.timezone, Date.now(), source)
+    const subject = items.find((item) => item.id === subjectId)
+    if (!subject) return fail(c, 404, 'not_found', 'That subject no longer exists.')
+    const topics = await listTopics(source, db, user.sub, subjectId)
+    return reply(c, { subject, topics })
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not load that subject.')
+  }
 })
 
 subjects.patch('/:id', async (c) => {
@@ -91,48 +97,70 @@ subjects.patch('/:id', async (c) => {
   const parsed = await parseBody(c, updateSchema)
   if (isResponse(parsed)) return parsed
   const subjectId = c.req.param('id')
-  const existing = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', subjectId, user.sub)
-  if (!existing) return fail(c, 404, 'not_found', 'That subject no longer exists.')
 
-  const fields: string[] = []
-  const params: unknown[] = []
-  const assign = (column: string, value: unknown) => {
-    fields.push(`${column} = ?`)
-    params.push(value)
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    if (!(await subjectExists(source, db, user.sub, subjectId))) return fail(c, 404, 'not_found', 'That subject no longer exists.')
+
+    const patch: Record<string, unknown> = {}
+    if (parsed.name !== undefined) patch.name = parsed.name
+    if (parsed.description !== undefined) patch.description = parsed.description ?? null
+    if (parsed.color !== undefined) patch.color = parsed.color
+    if (parsed.priority !== undefined) patch.priority = parsed.priority
+    if (parsed.difficulty !== undefined) patch.difficulty = parsed.difficulty
+    if (parsed.weeklyTargetMinutes !== undefined) patch.weekly_target_minutes = parsed.weeklyTargetMinutes ?? null
+    if (Object.keys(patch).length === 0) return reply(c, { updated: false })
+
+    if (source.pg && source.workspaceId) {
+      const { error } = await source.pg.from('subjects').update(patch).eq('workspace_id', source.workspaceId).eq('id', subjectId)
+      if (error) throw toWorkspaceError(error)
+    } else {
+      const fields = Object.keys(patch).map((key) => `${key} = ?`)
+      const values = Object.values(patch)
+      fields.push('updated_at = ?')
+      values.push(Date.now(), subjectId, user.sub)
+      await db.prepare(`UPDATE subjects SET ${fields.join(', ')} WHERE id = ? AND owner_sub = ?`).bind(...values).run()
+    }
+    return reply(c, { updated: true })
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not save the subject.')
   }
-  if (parsed.name !== undefined) assign('name', parsed.name)
-  if (parsed.description !== undefined) assign('description', parsed.description ?? null)
-  if (parsed.color !== undefined) assign('color', parsed.color)
-  if (parsed.priority !== undefined) assign('priority', parsed.priority)
-  if (parsed.difficulty !== undefined) assign('difficulty', parsed.difficulty)
-  if (parsed.weeklyTargetMinutes !== undefined) assign('weekly_target_minutes', parsed.weeklyTargetMinutes ?? null)
-  if (fields.length === 0) return reply(c, { updated: false })
-
-  assign('updated_at', Date.now())
-  params.push(subjectId, user.sub)
-  await exec(db, `UPDATE subjects SET ${fields.join(', ')} WHERE id = ? AND owner_sub = ?`, ...params)
-  return reply(c, { updated: true })
 })
 
 subjects.delete('/:id', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
   const subjectId = c.req.param('id')
-  const existing = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', subjectId, user.sub)
-  if (!existing) return fail(c, 404, 'not_found', 'That subject no longer exists.')
   const now = Date.now()
 
-  // History is preserved: completed sessions keep their subject row, which is
-  // soft-deleted. Open work and future plans for the subject are removed.
-  await db.batch([
-    db.prepare("DELETE FROM study_sessions WHERE owner_sub = ? AND subject_id = ? AND status = 'planned' AND is_locked = 0 AND starts_at > ?").bind(user.sub, subjectId, now),
-    db.prepare('UPDATE study_sessions SET task_id = NULL WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
-    db.prepare('DELETE FROM tasks WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
-    db.prepare('DELETE FROM topics WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
-    db.prepare('DELETE FROM assessments WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
-    db.prepare('UPDATE subjects SET deleted_at = ?, updated_at = ? WHERE id = ? AND owner_sub = ?').bind(now, now, subjectId, user.sub),
-  ])
-  return reply(c, { deleted: true })
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    if (!(await subjectExists(source, db, user.sub, subjectId))) return fail(c, 404, 'not_found', 'That subject no longer exists.')
+
+    // History is preserved: completed sessions keep their subject row, which is
+    // soft-deleted. Open work and future sessions for the subject are removed.
+    await db.batch([
+      db.prepare("DELETE FROM study_sessions WHERE owner_sub = ? AND subject_id = ? AND status = 'planned' AND is_locked = 0 AND starts_at > ?").bind(user.sub, subjectId, now),
+      db.prepare('UPDATE study_sessions SET task_id = NULL WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
+      db.prepare('DELETE FROM tasks WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
+      db.prepare('DELETE FROM assessments WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
+    ])
+
+    if (source.pg && source.workspaceId) {
+      const { error: topicsError } = await source.pg.from('topics').delete().eq('workspace_id', source.workspaceId).eq('subject_id', subjectId)
+      if (topicsError) throw toWorkspaceError(topicsError)
+      const { error } = await source.pg.from('subjects').update({ deleted_at: new Date(now).toISOString() }).eq('workspace_id', source.workspaceId).eq('id', subjectId)
+      if (error) throw toWorkspaceError(error)
+    } else {
+      await db.batch([
+        db.prepare('DELETE FROM topics WHERE owner_sub = ? AND subject_id = ?').bind(user.sub, subjectId),
+        db.prepare('UPDATE subjects SET deleted_at = ?, updated_at = ? WHERE id = ? AND owner_sub = ?').bind(now, now, subjectId, user.sub),
+      ])
+    }
+    return reply(c, { deleted: true })
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not delete the subject.')
+  }
 })
 
 const topicSchema = z.object({
@@ -148,25 +176,20 @@ subjects.post('/:id/topics', async (c) => {
   const parsed = await parseBody(c, topicSchema)
   if (isResponse(parsed)) return parsed
   const subjectId = c.req.param('id')
-  const subject = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', subjectId, user.sub)
-  if (!subject) return fail(c, 404, 'not_found', 'That subject no longer exists.')
 
-  const now = Date.now()
-  const topicId = id()
-  await exec(
-    db,
-    'INSERT INTO topics (id, owner_sub, subject_id, name, description, estimated_minutes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    topicId,
-    user.sub,
-    subjectId,
-    parsed.name,
-    parsed.description ?? null,
-    parsed.estimatedMinutes ?? null,
-    parsed.status,
-    now,
-    now,
-  )
-  return reply(c, { id: topicId }, 201)
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    if (!(await subjectExists(source, db, user.sub, subjectId))) return fail(c, 404, 'not_found', 'That subject no longer exists.')
+    const topicId = await createTopic(source, db, user.sub, subjectId, {
+      name: parsed.name,
+      description: parsed.description ?? null,
+      estimatedMinutes: parsed.estimatedMinutes ?? null,
+      status: parsed.status,
+    })
+    return reply(c, { id: topicId }, 201)
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not add the topic.')
+  }
 })
 
 export const topics = new Hono<AppContext>()
@@ -177,43 +200,31 @@ topics.patch('/:id', async (c) => {
   const parsed = await parseBody(c, topicSchema.partial())
   if (isResponse(parsed)) return parsed
   const topicId = c.req.param('id')
-  const existing = await one<{ id: string }>(db, 'SELECT id FROM topics WHERE id = ? AND owner_sub = ?', topicId, user.sub)
-  if (!existing) return fail(c, 404, 'not_found', 'That topic no longer exists.')
 
-  const fields: string[] = []
-  const params: unknown[] = []
-  if (parsed.name !== undefined) {
-    fields.push('name = ?')
-    params.push(parsed.name)
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    const changed = await updateTopic(source, db, user.sub, topicId, {
+      name: parsed.name,
+      description: parsed.description === undefined ? undefined : (parsed.description ?? null),
+      estimatedMinutes: parsed.estimatedMinutes === undefined ? undefined : (parsed.estimatedMinutes ?? null),
+      status: parsed.status,
+    })
+    return reply(c, { updated: changed })
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not save the topic.')
   }
-  if (parsed.description !== undefined) {
-    fields.push('description = ?')
-    params.push(parsed.description ?? null)
-  }
-  if (parsed.estimatedMinutes !== undefined) {
-    fields.push('estimated_minutes = ?')
-    params.push(parsed.estimatedMinutes ?? null)
-  }
-  if (parsed.status !== undefined) {
-    fields.push('status = ?')
-    params.push(parsed.status)
-  }
-  if (fields.length === 0) return reply(c, { updated: false })
-  fields.push('updated_at = ?')
-  params.push(Date.now(), topicId, user.sub)
-  await exec(db, `UPDATE topics SET ${fields.join(', ')} WHERE id = ? AND owner_sub = ?`, ...params)
-  return reply(c, { updated: true })
 })
 
 topics.delete('/:id', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
   const topicId = c.req.param('id')
-  const existing = await one<{ id: string }>(db, 'SELECT id FROM topics WHERE id = ? AND owner_sub = ?', topicId, user.sub)
-  if (!existing) return fail(c, 404, 'not_found', 'That topic no longer exists.')
-  await db.batch([
-    db.prepare('UPDATE tasks SET topic_id = NULL WHERE owner_sub = ? AND topic_id = ?').bind(user.sub, topicId),
-    db.prepare('DELETE FROM topics WHERE id = ? AND owner_sub = ?').bind(topicId, user.sub),
-  ])
-  return reply(c, { deleted: true })
+
+  try {
+    const source = await subjectSource(c.env, c.get('accessToken'), user)
+    await deleteTopic(source, db, user.sub, topicId)
+    return reply(c, { deleted: true })
+  } catch (error) {
+    return fail(c, 503, 'workspace_unavailable', error instanceof Error ? error.message : 'Could not delete the topic.')
+  }
 })

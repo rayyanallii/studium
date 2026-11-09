@@ -5,7 +5,8 @@ import { many, num, one } from '../db'
 import type { AppContext } from '../env'
 import { dayBounds, localDate } from '../lib/dates'
 import { reply } from '../lib/http'
-import { ensureProfile, expireSessions, loadAssessments, loadSessions, loadSubjects, loadTasks, startOfWeek } from '../lib/rows'
+import { ensureProfile, expireSessions, loadAssessments, loadSessions, loadTasks, startOfWeek } from '../lib/rows'
+import { loadSubjects, subjectDirectory, subjectRecords, subjectSource } from '../lib/subjects'
 import type { AnalyticsData, DashboardData, StudySession } from '../../shared/types'
 
 export const analytics = new Hono<AppContext>()
@@ -27,12 +28,16 @@ analytics.get('/dashboard', async (c) => {
   const weekFrom = startOfWeek(now, timezone)
   const weekTo = DateTime.fromMillis(weekFrom, { zone: timezone }).plus({ days: 7 }).toMillis()
 
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  const records = await subjectRecords(source, db, user.sub)
+  const directory = await subjectDirectory(source, db, user.sub, records)
+
   const [subjects, tasks, assessments, todaySessions, weekSessions, activePlan, missed] = await Promise.all([
-    loadSubjects(db, user.sub, timezone, now),
-    loadTasks(db, user.sub, now, { openOnly: true }),
-    loadAssessments(db, user.sub),
-    loadSessions(db, user.sub, { from: todayBounds.start, to: todayBounds.end }),
-    loadSessions(db, user.sub, { from: weekFrom, to: weekTo }),
+    loadSubjects(db, user.sub, timezone, now, source, records),
+    loadTasks(db, user.sub, now, directory, { openOnly: true }),
+    loadAssessments(db, user.sub, directory),
+    loadSessions(db, user.sub, directory, { from: todayBounds.start, to: todayBounds.end }),
+    loadSessions(db, user.sub, directory, { from: weekFrom, to: weekTo }),
     one<{ id: string }>(db, "SELECT id FROM study_plans WHERE owner_sub = ? AND status = 'active' LIMIT 1", user.sub),
     one<{ n: number }>(
       db,
@@ -111,8 +116,12 @@ analytics.get('/analytics', async (c) => {
   const from = fromDate.startOf('day').toMillis()
   const to = DateTime.fromISO(today, { zone: timezone }).plus({ days: 1 }).startOf('day').toMillis()
 
-  const [sessions, standalone, subjectRows, taskRows, focusCount] = await Promise.all([
-    loadSessions(db, user.sub, { from, to }),
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  const records = await subjectRecords(source, db, user.sub)
+  const directory = await subjectDirectory(source, db, user.sub, records)
+
+  const [sessions, standalone, taskRows, focusCount] = await Promise.all([
+    loadSessions(db, user.sub, directory, { from, to }),
     many<{ subject_id: string | null; started_at: number; accumulated_focus_seconds: number }>(
       db,
       `SELECT subject_id, started_at, accumulated_focus_seconds FROM focus_runs
@@ -120,11 +129,6 @@ analytics.get('/analytics', async (c) => {
       user.sub,
       from,
       to,
-    ),
-    many<{ id: string; name: string; color: string; weekly_target_minutes: number | null }>(
-      db,
-      'SELECT id, name, color, weekly_target_minutes FROM subjects WHERE owner_sub = ?',
-      user.sub,
     ),
     many<{ status: string; due_at: number | null }>(db, 'SELECT status, due_at FROM tasks WHERE owner_sub = ?', user.sub),
     one<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM focus_runs WHERE owner_sub = ? AND started_at >= ? AND started_at < ?', user.sub, from, to),
@@ -189,14 +193,14 @@ analytics.get('/analytics', async (c) => {
       averageSessionMinutes: completedSessions > 0 ? Math.round(studyMinutes / completedSessions) : 0,
     },
     daily: [...daily.entries()].map(([date, value]) => ({ date, minutes: value.minutes, planned: value.planned })),
-    subjects: subjectRows
+    subjects: records
       .map((row) => ({
         id: row.id,
         name: row.name,
         color: row.color,
         minutes: subjectTotals.get(row.id)?.minutes ?? 0,
         planned: subjectTotals.get(row.id)?.planned ?? 0,
-        targetMinutes: row.weekly_target_minutes === null ? null : Number(row.weekly_target_minutes),
+        targetMinutes: row.weeklyTargetMinutes,
       }))
       .filter((row) => row.minutes > 0 || row.planned > 0)
       .sort((a, b) => b.minutes - a.minutes),
@@ -215,7 +219,8 @@ analytics.get('/analytics/subjects/:id', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
   const now = Date.now()
-  const sessions: StudySession[] = await loadSessions(db, user.sub, { from: now - 30 * 86_400_000, to: now, subjectId: c.req.param('id') })
+  const directory = await subjectDirectory(await subjectSource(c.env, c.get('accessToken'), user), db, user.sub)
+  const sessions: StudySession[] = await loadSessions(db, user.sub, directory, { from: now - 30 * 86_400_000, to: now, subjectId: c.req.param('id') })
   return reply(c, {
     totals: {
       minutes: sessions.reduce((sum, s) => sum + s.actualMinutes, 0),

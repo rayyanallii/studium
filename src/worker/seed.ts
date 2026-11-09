@@ -1,9 +1,14 @@
 // Optional sample workspace. Never applied automatically: a user has to ask for
 // it from Settings, so real accounts never contain invented history.
+//
+// Subjects and topics are written to Postgres when the request has a Supabase
+// session; tasks, assessments, availability and plans stay in D1 for now.
 import { DateTime } from 'luxon'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { id, many, num, one } from './db'
 import { atLocalTime, localDate, minutesOfDay } from './lib/dates'
+import { toWorkspaceError } from './lib/pg'
 import { buildSchedule } from './lib/scheduler'
 import type { SchedulerInput } from './lib/scheduler'
 import type { PrefsRow } from './lib/rows'
@@ -22,7 +27,20 @@ const TASKS = [
   { subject: 'Physics', topic: 'Waves and optics', title: 'Prepare for chapter test', minutes: 120, inDays: 6, priority: 'high' },
 ] as const
 
-export async function clearWorkspace(db: D1Database, ownerSub: string) {
+/** Where the workspace-owned subject rows live for this request. */
+export interface SeedTarget {
+  pg?: SupabaseClient | null
+  workspaceId?: string | null
+  profileId?: string | null
+}
+
+export async function clearWorkspace(db: D1Database, ownerSub: string, target: SeedTarget = {}) {
+  if (target.pg && target.workspaceId) {
+    const { error: topicError } = await target.pg.from('topics').delete().eq('workspace_id', target.workspaceId)
+    if (topicError) throw toWorkspaceError(topicError)
+    const { error: subjectError } = await target.pg.from('subjects').delete().eq('workspace_id', target.workspaceId)
+    if (subjectError) throw toWorkspaceError(subjectError)
+  }
   await db.batch([
     db.prepare('DELETE FROM focus_runs WHERE owner_sub = ?').bind(ownerSub),
     db.prepare('DELETE FROM study_sessions WHERE owner_sub = ?').bind(ownerSub),
@@ -31,50 +49,89 @@ export async function clearWorkspace(db: D1Database, ownerSub: string) {
     db.prepare('DELETE FROM availability_rules WHERE owner_sub = ?').bind(ownerSub),
     db.prepare('DELETE FROM assessments WHERE owner_sub = ?').bind(ownerSub),
     db.prepare('DELETE FROM tasks WHERE owner_sub = ?').bind(ownerSub),
+    // The development identity keeps its subjects in D1; production rows were
+    // already removed from Postgres above.
     db.prepare('DELETE FROM topics WHERE owner_sub = ?').bind(ownerSub),
     db.prepare('DELETE FROM subjects WHERE owner_sub = ?').bind(ownerSub),
   ])
 }
 
-export async function seedDemo(db: D1Database, ownerSub: string, timezone: string, prefs: PrefsRow) {
+export async function seedDemo(db: D1Database, ownerSub: string, timezone: string, prefs: PrefsRow, target: SeedTarget = {}) {
   const now = Date.now()
   const today = localDate(now, timezone)
-  const subjectIds = new Map<string, string>()
-  const topicIds = new Map<string, string>()
+
+  const subjects = SUBJECTS.map((subject) => ({ ...subject, id: id() }))
+  const subjectIds = new Map<string, string>(subjects.map((subject) => [subject.name, subject.id]))
+  const topics = subjects.flatMap((subject) =>
+    subject.topics.map((name) => ({ id: id(), subjectId: subject.id, name, key: `${subject.name}|${name}` })),
+  )
+  const topicIds = new Map(topics.map((topic) => [topic.key, topic.id]))
+
+  const tasks = TASKS.map((task) => ({
+    ...task,
+    id: id(),
+    subjectId: subjectIds.get(task.subject)!,
+    topicId: topicIds.get(`${task.subject}|${task.topic}`) ?? null,
+    dueAt: atLocalTime(DateTime.fromISO(today, { zone: timezone }).plus({ days: task.inDays }).toISODate() ?? today, 18 * 60, timezone),
+  }))
+
+  if (target.pg && target.workspaceId) {
+    const { error: subjectError } = await target.pg.from('subjects').insert(
+      subjects.map((subject) => ({
+        id: subject.id,
+        workspace_id: target.workspaceId,
+        name: subject.name,
+        description: null,
+        color: subject.color,
+        priority: subject.priority,
+        difficulty: subject.difficulty,
+        weekly_target_minutes: subject.target,
+      })),
+    )
+    if (subjectError) throw toWorkspaceError(subjectError)
+    const { error: topicError } = await target.pg.from('topics').insert(
+      topics.map((topic) => ({
+        id: topic.id,
+        workspace_id: target.workspaceId,
+        subject_id: topic.subjectId,
+        name: topic.name,
+        description: null,
+        estimated_minutes: 60,
+        status: 'not_started',
+      })),
+    )
+    if (topicError) throw toWorkspaceError(topicError)
+  }
+
   const statements: D1PreparedStatement[] = []
 
-  for (const subject of SUBJECTS) {
-    const subjectId = id()
-    subjectIds.set(subject.name, subjectId)
-    statements.push(
-      db
-        .prepare(
-          'INSERT INTO subjects (id, owner_sub, name, description, color, priority, difficulty, weekly_target_minutes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        )
-        .bind(subjectId, ownerSub, subject.name, null, subject.color, subject.priority, subject.difficulty, subject.target, now, now),
-    )
-    for (const topic of subject.topics) {
-      const topicId = id()
-      topicIds.set(`${subject.name}|${topic}`, topicId)
+  if (!(target.pg && target.workspaceId)) {
+    for (const subject of subjects) {
       statements.push(
         db
-          .prepare('INSERT INTO topics (id, owner_sub, subject_id, name, description, estimated_minutes, status, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)')
-          .bind(topicId, ownerSub, subjectId, topic, 60, 'not_started', now, now),
+          .prepare(
+            'INSERT INTO subjects (id, owner_sub, name, description, color, priority, difficulty, weekly_target_minutes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          )
+          .bind(subject.id, ownerSub, subject.name, null, subject.color, subject.priority, subject.difficulty, subject.target, now, now),
       )
+      for (const topic of topics.filter((item) => item.subjectId === subject.id)) {
+        statements.push(
+          db
+            .prepare('INSERT INTO topics (id, owner_sub, subject_id, name, description, estimated_minutes, status, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)')
+            .bind(topic.id, ownerSub, subject.id, topic.name, 60, 'not_started', now, now),
+        )
+      }
     }
   }
 
-  for (const task of TASKS) {
-    const subjectId = subjectIds.get(task.subject)!
-    const topicId = topicIds.get(`${task.subject}|${task.topic}`) ?? null
-    const due = atLocalTime(DateTime.fromISO(today, { zone: timezone }).plus({ days: task.inDays }).toISODate() ?? today, 18 * 60, timezone)
+  for (const task of tasks) {
     statements.push(
       db
         .prepare(
           `INSERT INTO tasks (id, owner_sub, subject_id, topic_id, title, description, priority, status, due_at, estimated_minutes, completed_minutes, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, NULL, ?, 'todo', ?, ?, 0, ?, ?)`,
         )
-        .bind(id(), ownerSub, subjectId, topicId, task.title, task.priority, due, task.minutes, now, now),
+        .bind(task.id, ownerSub, task.subjectId, task.topicId, task.title, task.priority, task.dueAt, task.minutes, now, now),
     )
   }
 
@@ -107,19 +164,17 @@ export async function seedDemo(db: D1Database, ownerSub: string, timezone: strin
 
   await db.batch(statements)
 
+  if (target.pg && target.profileId) {
+    const { error } = await target.pg
+      .from('profiles')
+      .update({ onboarding_completed: true, onboarding_step: 6, timezone })
+      .eq('id', target.profileId)
+    if (error) throw toWorkspaceError(error)
+  }
+
   // Seed an active plan so the demo immediately shows a real schedule.
-  const subjectRows = await many<{ id: string; name: string; color: string; priority: string; difficulty: number; weekly_target_minutes: number | null }>(
-    db,
-    'SELECT id, name, color, priority, difficulty, weekly_target_minutes FROM subjects WHERE owner_sub = ?',
-    ownerSub,
-  )
-  const taskRows = await many<{ id: string; subject_id: string; title: string; priority: string; due_at: number | null; estimated_minutes: number }>(
-    db,
-    'SELECT id, subject_id, title, priority, due_at, estimated_minutes FROM tasks WHERE owner_sub = ?',
-    ownerSub,
-  )
-  const startDate = today
   const horizonDays = num(prefs.planning_horizon_days, 7)
+  const startDate = today
 
   const input: SchedulerInput = {
     timezone,
@@ -133,22 +188,22 @@ export async function seedDemo(db: D1Database, ownerSub: string, timezone: strin
       planningStyle: 'balanced',
       urgentFirst: false,
     },
-    subjects: subjectRows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      color: row.color,
-      priority: row.priority as 'low' | 'medium' | 'high',
-      difficulty: num(row.difficulty, 3),
-      weeklyTargetMinutes: row.weekly_target_minutes === null ? null : Number(row.weekly_target_minutes),
+    subjects: subjects.map((subject) => ({
+      id: subject.id,
+      name: subject.name,
+      color: subject.color,
+      priority: subject.priority as 'low' | 'medium' | 'high',
+      difficulty: subject.difficulty,
+      weeklyTargetMinutes: subject.target,
       studiedWeekMinutes: 0,
     })),
-    tasks: taskRows.map((row) => ({
-      id: row.id,
-      subjectId: row.subject_id,
-      title: row.title,
-      priority: row.priority as 'low' | 'medium' | 'high',
-      dueAt: row.due_at === null ? null : Number(row.due_at),
-      estimatedMinutes: num(row.estimated_minutes),
+    tasks: tasks.map((task) => ({
+      id: task.id,
+      subjectId: task.subjectId,
+      title: task.title,
+      priority: task.priority as 'low' | 'medium' | 'high',
+      dueAt: task.dueAt,
+      estimatedMinutes: task.minutes,
       completedMinutes: 0,
     })),
     availability: windows.map((w) => ({ weekday: w.weekday, startLocalTime: w.start, endLocalTime: w.end })),
@@ -157,7 +212,7 @@ export async function seedDemo(db: D1Database, ownerSub: string, timezone: strin
   }
 
   const result = buildSchedule(input)
-  if (result.sessions.length === 0) return { subjects: subjectRows.length, sessions: 0 }
+  if (result.sessions.length === 0) return { subjects: subjects.length, sessions: 0 }
 
   const planId = id()
   const endDate = DateTime.fromISO(startDate, { zone: timezone }).plus({ days: horizonDays - 1 }).toISODate() ?? startDate
@@ -202,13 +257,16 @@ export async function seedDemo(db: D1Database, ownerSub: string, timezone: strin
         .bind(id(), ownerSub, planId, session.subjectId, session.taskId, session.title, session.startsAt, session.endsAt, session.plannedMinutes, now, now),
     )
   }
-  // Keep the total requested minutes honest for the dashboard.
-  planStatements.push(
-    db.prepare('UPDATE profiles SET onboarding_completed = 1, onboarding_step = 6, timezone = ?, updated_at = ? WHERE owner_sub = ?').bind(timezone, now, ownerSub),
-  )
+  // The development identity keeps onboarding state in D1; production profiles
+  // were updated in Postgres above.
+  if (!(target.pg && target.profileId)) {
+    planStatements.push(
+      db.prepare('UPDATE profiles SET onboarding_completed = 1, onboarding_step = 6, timezone = ?, updated_at = ? WHERE owner_sub = ?').bind(timezone, now, ownerSub),
+    )
+  }
   await db.batch(planStatements)
 
-  return { subjects: subjectRows.length, sessions: result.sessions.length }
+  return { subjects: subjects.length, sessions: result.sessions.length }
 }
 
 /** Total minutes of availability across a week, used for onboarding hints. */

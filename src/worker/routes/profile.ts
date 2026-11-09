@@ -8,6 +8,7 @@ import { dayBounds, isValidTimezone, localDate } from '../lib/dates'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { ensureProfile, mapPreferences, mapProfile } from '../lib/rows'
 import { ensureWorkspace, findWorkspace, toWorkspaceError, workspaceClient } from '../lib/pg'
+import { subjectRecords, subjectSource } from '../lib/subjects'
 import { ACADEMIC_CONTEXTS } from '../../shared/types'
 import type { Me, Preferences, Profile } from '../../shared/types'
 import { authMode } from '../auth'
@@ -95,13 +96,13 @@ profile.get('/me', async (c) => {
   const today = localDate(Date.now(), timezone)
   const bounds = dayBounds(today, timezone)
 
-  const counts = await one<{ subjects: number; open_tasks: number; today_sessions: number }>(
+  // Subjects are Postgres records now; the remaining counts stay on D1.
+  const subjectCount = (await subjectRecords(await subjectSource(c.env, c.get('accessToken'), user), db, user.sub)).length
+  const counts = await one<{ open_tasks: number; today_sessions: number }>(
     db,
     `SELECT
-      (SELECT COUNT(*) FROM subjects WHERE owner_sub = ? AND deleted_at IS NULL) AS subjects,
       (SELECT COUNT(*) FROM tasks WHERE owner_sub = ? AND status IN ('todo','in_progress')) AS open_tasks,
       (SELECT COUNT(*) FROM study_sessions WHERE owner_sub = ? AND starts_at >= ? AND starts_at < ? AND status != 'canceled') AS today_sessions`,
-    user.sub,
     user.sub,
     user.sub,
     bounds.start,
@@ -119,7 +120,7 @@ profile.get('/me', async (c) => {
       aiModel: aiModel(c.env),
     },
     counts: {
-      subjects: num(counts?.subjects),
+      subjects: subjectCount,
       openTasks: num(counts?.open_tasks),
       todaySessions: num(counts?.today_sessions),
     },

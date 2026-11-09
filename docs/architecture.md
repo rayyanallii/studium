@@ -15,17 +15,20 @@ Cloudflare Worker (Hono)  ── /api/*
   |  same-origin check on mutations
   |  Zod validation, ownership checks, deterministic domain logic
   |
-  ├── Supabase Postgres (RLS)   profiles, workspaces, study_preferences  ← live
-  ├── Cloudflare D1 (SQLite)    subjects … focus_runs, study sets        ← porting next
+  ├── Supabase Postgres (RLS)   profiles, workspaces, preferences, subjects, topics  ← live
+  ├── Cloudflare D1 (SQLite)    tasks … focus_runs, study sets                       ← porting next
   ├── R2 (FILES)                original uploads
   ├── Supabase Storage          study-materials bucket (private)         ← ready
   └── Experiential gateway      gpt-6-luna, server-side key only
 ```
 
 Two database engines coexist during the migration. The rule that keeps that
-honest: **each record has exactly one home.** `profiles` and `study_preferences`
-are in Postgres; subjects, tasks, plans, sessions, focus runs and study sets are
-still in D1. No row is written to both.
+honest: **each record has exactly one home.** `profiles`, `study_preferences`,
+`subjects` and `topics` are in Postgres; tasks, plans, sessions, focus runs and
+study sets are still in D1. No row is written to both. Because a D1 row points
+at a Postgres subject by id, D1 loaders receive a `SubjectDirectory` built from
+Postgres (`subjectDirectory()` in `src/worker/lib/subjects.ts`) instead of
+joining a table that no longer lives in the same database.
 
 ## 2. Request lifecycle
 
@@ -79,11 +82,14 @@ to `localStorage` for instant paint. Deleting study data removes the workspace
 (cascading Postgres rows), D1 rows and stored files; the auth account itself is
 untouched.
 
-### 4.2 Academic structure (D1 today)
+### 4.2 Academic structure (Postgres, live)
 
 Subjects carry colour, priority, difficulty and an optional weekly target;
 chapters group topics; topics carry an estimate and a status. Deleting a subject
-is a soft delete (`deleted_at`) so historical sessions keep their label.
+is a soft delete (`deleted_at`) so historical sessions keep their label, which
+is why the D1 loaders skip rows whose subject is no longer in the directory.
+Subject stats still combine Postgres topic counts with D1 task, session and
+deadline aggregates — the one place a subject's statistics cross both stores.
 Subject detail is a set of filtered projections of the same records — never
 duplicated rows.
 
@@ -166,7 +172,7 @@ before the next one starts.
 | Slice | Moves to Postgres | Done when |
 | --- | --- | --- |
 | 1 | `profiles`, `workspaces`, `study_preferences` | **Done** — `/me`, profile and preference updates, account deletion; verified live |
-| 2 | subjects, chapters, topics | Subject CRUD + stats read Postgres; `owner_sub` queries removed |
+| 2 | subjects, chapters, topics | **Done** — subject/topic CRUD and stats read Postgres; D1 joins replaced by the subject directory |
 | 3 | tasks, goals, assessments, availability | Task list, counts and planner inputs read Postgres |
 | 4 | materials + chunks, storage upload | Signed upload to `study-materials`; extraction status persisted |
 | 5 | `study_artifacts`, reviews, attempts, notebook | Library, flashcard, quiz and notebook routes read Postgres |

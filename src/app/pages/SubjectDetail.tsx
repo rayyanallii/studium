@@ -57,7 +57,7 @@ export function SubjectDetail() {
   const doneTasks = tasks.filter((task) => task.status === 'completed')
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <Link to="/subjects" className="inline-flex w-fit items-center gap-1.5 text-[15px] text-muted hover:text-fg">
         <ArrowLeft className="size-4" />
         Subjects
@@ -80,7 +80,7 @@ export function SubjectDetail() {
         }
       />
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge tone={subject.priority === 'high' ? 'danger' : subject.priority === 'medium' ? 'warning' : 'neutral'}>{subject.priority} priority</Badge>
         <Badge tone="neutral">Difficulty {subject.difficulty}/5</Badge>
         {subject.weeklyTargetMinutes && <Badge tone="accent">{minutesLabel(subject.weeklyTargetMinutes)} weekly target</Badge>}
@@ -90,23 +90,23 @@ export function SubjectDetail() {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
           { label: 'Studied this week', value: minutesLabel(subject.stats.studiedWeekMinutes) },
           { label: 'Planned this week', value: minutesLabel(subject.stats.plannedWeekMinutes) },
           { label: 'Last 30 days', value: minutesLabel(analytics?.totals.minutes ?? 0) },
           { label: 'Open tasks', value: String(openTasks.length) },
         ].map((stat) => (
-          <Card key={stat.label} className="p-4">
+          <Card key={stat.label} className="p-5">
             <p className="text-[13px] text-faint">{stat.label}</p>
-            <p className="mt-1 text-[20px] font-semibold tabular">{stat.value}</p>
+            <p className="mt-1.5 text-[22px] font-semibold tracking-tight tabular">{stat.value}</p>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h2 className="text-[14px] font-semibold">Tasks</h2>
             <Button size="sm" onClick={() => setAddTask(true)}>
               <Plus />
@@ -124,8 +124,8 @@ export function SubjectDetail() {
           )}
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <Card className="p-4">
+        <div className="flex flex-col gap-5">
+          <Card className="p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-semibold">Assessments</h2>
               <Button size="sm" variant="ghost" onClick={() => setAddAssessment(true)}>
@@ -150,7 +150,7 @@ export function SubjectDetail() {
             )}
           </Card>
 
-          <Card className="p-4">
+          <Card className="p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-semibold">Topics</h2>
               <Button size="sm" variant="ghost" onClick={() => setTopicDialog({})}>

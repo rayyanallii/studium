@@ -5,6 +5,7 @@ import { exec, id, one } from '../db'
 import type { AppContext } from '../env'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { loadAssessments } from '../lib/rows'
+import { subjectDirectory, subjectExists, subjectSource } from '../lib/subjects'
 
 export const assessments = new Hono<AppContext>()
 
@@ -19,7 +20,7 @@ const schema = z.object({
 assessments.get('/', async (c) => {
   const user = c.get('user')
   const db = c.get('db')
-  const items = await loadAssessments(db, user.sub)
+  const items = await loadAssessments(db, user.sub, await subjectDirectory(await subjectSource(c.env, c.get('accessToken'), user), db, user.sub))
   return reply(c, { items })
 })
 
@@ -28,8 +29,8 @@ assessments.post('/', async (c) => {
   const db = c.get('db')
   const parsed = await parseBody(c, schema)
   if (isResponse(parsed)) return parsed
-  const subject = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', parsed.subjectId, user.sub)
-  if (!subject) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
+  const subject = await subjectSource(c.env, c.get('accessToken'), user)
+  if (!(await subjectExists(subject, db, user.sub, parsed.subjectId))) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
 
   const now = Date.now()
   const assessmentId = id()
@@ -65,8 +66,8 @@ assessments.patch('/:id', async (c) => {
     params.push(parsed.title)
   }
   if (parsed.subjectId !== undefined) {
-    const subject = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', parsed.subjectId, user.sub)
-    if (!subject) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
+    const subject = await subjectSource(c.env, c.get('accessToken'), user)
+    if (!(await subjectExists(subject, db, user.sub, parsed.subjectId))) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
     fields.push('subject_id = ?')
     params.push(parsed.subjectId)
   }

@@ -11,12 +11,14 @@ security policies and the private storage bucket are versioned under
 | --- | --- |
 | Auth (email + password, reset, sessions) | **Wired.** The browser signs in with `@supabase/supabase-js`; the Worker verifies the bearer token with `auth.getUser` on every `/api` request. |
 | Postgres schema, RLS, provisioning trigger, storage bucket | **Applied** to `zicogvqcwgrstkfkbjeg`; the private bucket and RPC were verified live, and `npm run check:schema` covers the same migrations against an in-memory Postgres. |
-| Workspace API (`/api/*`) | Account slice (profile, default workspace, study preferences) reads and writes Postgres under the user's JWT. Subjects, tasks, availability, plans, sessions, focus and study sets still use D1 until their slices land — see [architecture](architecture.md#6-port-plan). |
+| Workspace API (`/api/*`) | Account and academic-structure slices (profile, default workspace, study preferences, subjects, topics) read and write Postgres under the user's JWT. Tasks, availability, plans, sessions, focus and study sets still use D1 until their slices land — see [architecture](architecture.md#6-port-plan). |
 | AI gateway | Server-side Experiential call (`gpt-6-luna`), unchanged. |
 
-One record, one home: nothing is written to both databases. The profile and
-preference tables are Postgres; the domains listed above are D1. Nothing in the
-app claims a database that is not connected.
+One record, one home: nothing is written to both databases. Profiles,
+preferences, subjects and topics are Postgres; the domains listed above are D1.
+The D1 loaders read subject labels through a directory built from Postgres rather
+than joining the moved tables. Nothing in the app claims a database that is not
+connected.
 
 ## 2. Environment
 

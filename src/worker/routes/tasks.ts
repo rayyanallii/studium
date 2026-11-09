@@ -6,6 +6,7 @@ import type { AppContext } from '../env'
 import { dayBounds, localDate } from '../lib/dates'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { ensureProfile, loadTask, loadTasks } from '../lib/rows'
+import { subjectDirectory, subjectExists, subjectSource, topicExists } from '../lib/subjects'
 
 export const tasks = new Hono<AppContext>()
 
@@ -35,7 +36,9 @@ tasks.get('/', async (c) => {
   const today = localDate(now, profile.timezone)
   const bounds = dayBounds(today, profile.timezone)
 
-  let items = await loadTasks(db, user.sub, now)
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  const directory = await subjectDirectory(source, db, user.sub)
+  let items = await loadTasks(db, user.sub, now, directory)
   const filter = c.req.query('filter') ?? 'all'
   const subjectId = c.req.query('subjectId')
   const priority = c.req.query('priority')
@@ -78,11 +81,12 @@ tasks.post('/', async (c) => {
   const parsed = await parseBody(c, taskSchema)
   if (isResponse(parsed)) return parsed
 
-  const subject = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', parsed.subjectId, user.sub)
-  if (!subject) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
-  if (parsed.topicId) {
-    const topic = await one<{ id: string }>(db, 'SELECT id FROM topics WHERE id = ? AND owner_sub = ? AND subject_id = ?', parsed.topicId, user.sub, parsed.subjectId)
-    if (!topic) return fail(c, 422, 'unknown_topic', 'That topic does not belong to the chosen subject.')
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  if (!(await subjectExists(source, db, user.sub, parsed.subjectId))) {
+    return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
+  }
+  if (parsed.topicId && !(await topicExists(source, db, user.sub, parsed.topicId, parsed.subjectId))) {
+    return fail(c, 422, 'unknown_topic', 'That topic does not belong to the chosen subject.')
   }
 
   const now = Date.now()
@@ -103,7 +107,7 @@ tasks.post('/', async (c) => {
     now,
     now,
   )
-  const task = await loadTask(db, user.sub, taskId, now)
+  const task = await loadTask(db, user.sub, taskId, now, await subjectDirectory(source, db, user.sub))
   return reply(c, { task }, 201)
 })
 
@@ -121,13 +125,12 @@ tasks.patch('/:id', async (c) => {
   )
   if (!existing) return fail(c, 404, 'not_found', 'That task no longer exists.')
 
-  if (parsed.subjectId) {
-    const subject = await one<{ id: string }>(db, 'SELECT id FROM subjects WHERE id = ? AND owner_sub = ? AND deleted_at IS NULL', parsed.subjectId, user.sub)
-    if (!subject) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  if (parsed.subjectId && !(await subjectExists(source, db, user.sub, parsed.subjectId))) {
+    return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
   }
-  if (parsed.topicId) {
-    const topic = await one<{ id: string }>(db, 'SELECT id FROM topics WHERE id = ? AND owner_sub = ?', parsed.topicId, user.sub)
-    if (!topic) return fail(c, 422, 'unknown_topic', 'That topic does not exist in your workspace.')
+  if (parsed.topicId && !(await topicExists(source, db, user.sub, parsed.topicId))) {
+    return fail(c, 422, 'unknown_topic', 'That topic does not exist in your workspace.')
   }
 
   const now = Date.now()
@@ -183,7 +186,7 @@ tasks.patch('/:id', async (c) => {
   params.push(taskId, user.sub)
   await exec(db, `UPDATE tasks SET ${fields.join(', ')} WHERE id = ? AND owner_sub = ?`, ...params)
 
-  const task = await loadTask(db, user.sub, taskId, now)
+  const task = await loadTask(db, user.sub, taskId, now, await subjectDirectory(source, db, user.sub))
   return reply(c, { task })
 })
 
@@ -208,7 +211,8 @@ tasks.post('/:id/reopen', async (c) => {
   const existing = await one<{ id: string }>(db, 'SELECT id FROM tasks WHERE id = ? AND owner_sub = ?', taskId, user.sub)
   if (!existing) return fail(c, 404, 'not_found', 'That task no longer exists.')
   await exec(db, "UPDATE tasks SET status = 'todo', completed_minutes = 0, updated_at = ? WHERE id = ? AND owner_sub = ?", Date.now(), taskId, user.sub)
-  const task = await loadTask(db, user.sub, taskId, Date.now())
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  const task = await loadTask(db, user.sub, taskId, Date.now(), await subjectDirectory(source, db, user.sub))
   return reply(c, { task })
 })
 
@@ -219,26 +223,28 @@ tasks.get('/:id/sessions', async (c) => {
   const taskId = c.req.param('id')
   const existing = await one<{ id: string }>(db, 'SELECT id FROM tasks WHERE id = ? AND owner_sub = ?', taskId, user.sub)
   if (!existing) return fail(c, 404, 'not_found', 'That task no longer exists.')
-  const rows = await many<{ id: string; title: string; starts_at: number; ends_at: number; status: string; planned_minutes: number; actual_minutes: number; subject_id: string; subject_name: string; subject_color: string }>(
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  const directory = await subjectDirectory(source, db, user.sub)
+  const rows = await many<{ id: string; title: string; starts_at: number; ends_at: number; status: string; planned_minutes: number; actual_minutes: number; subject_id: string }>(
     db,
-    `SELECT ss.id, ss.title, ss.starts_at, ss.ends_at, ss.status, ss.planned_minutes, ss.actual_minutes, ss.subject_id, s.name AS subject_name, s.color AS subject_color
-     FROM study_sessions ss JOIN subjects s ON s.id = ss.subject_id
-     WHERE ss.owner_sub = ? AND ss.task_id = ? ORDER BY ss.starts_at`,
+    'SELECT id, title, starts_at, ends_at, status, planned_minutes, actual_minutes, subject_id FROM study_sessions WHERE owner_sub = ? AND task_id = ? ORDER BY starts_at',
     user.sub,
     taskId,
   )
   return reply(c, {
-    items: rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      startsAt: Number(row.starts_at),
-      endsAt: Number(row.ends_at),
-      status: row.status,
-      plannedMinutes: Number(row.planned_minutes),
-      actualMinutes: Number(row.actual_minutes),
-      subjectId: row.subject_id,
-      subjectName: row.subject_name,
-      subjectColor: row.subject_color,
-    })),
+    items: rows
+      .filter((row) => directory.subjects.has(row.subject_id))
+      .map((row) => ({
+        id: row.id,
+        title: row.title,
+        startsAt: Number(row.starts_at),
+        endsAt: Number(row.ends_at),
+        status: row.status,
+        plannedMinutes: Number(row.planned_minutes),
+        actualMinutes: Number(row.actual_minutes),
+        subjectId: row.subject_id,
+        subjectName: directory.subjects.get(row.subject_id)!.name,
+        subjectColor: directory.subjects.get(row.subject_id)!.color,
+      })),
   })
 })

@@ -22,7 +22,7 @@ export function Subjects() {
   const items = data?.items ?? []
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Subjects"
         subtitle={items.length > 0 ? `${items.length} ${items.length === 1 ? 'subject' : 'subjects'} in your workspace` : 'The building blocks of your plan'}
@@ -35,9 +35,9 @@ export function Subjects() {
       />
 
       {isLoading && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-[186px] rounded-card" />
+            <Skeleton key={index} className="h-[200px] rounded-card" />
           ))}
         </div>
       )}
@@ -58,13 +58,13 @@ export function Subjects() {
         </Card>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((subject, index) => {
           const goal = subject.weeklyTargetMinutes
           const value = goal ? percent(subject.stats.studiedWeekMinutes, goal) : 0
           return (
             <motion.div key={subject.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: index * 0.04 }}>
-              <Card className="flex h-full flex-col p-4">
+              <Card className="flex h-full flex-col p-5 transition-colors hover:border-line-strong">
                 <div className="flex items-start justify-between gap-2">
                   <span className="grid size-10 place-items-center rounded-[11px]" style={{ background: `color-mix(in srgb, ${subject.color} 14%, var(--color-panel))`, color: subject.color }}>
                     <BookOpen className="size-5" />
@@ -82,12 +82,12 @@ export function Subjects() {
                   />
                 </div>
 
-                <Link to={`/subjects/${subject.id}`} className="mt-3 block">
-                  <h3 className="truncate text-[16px] font-semibold tracking-tight hover:text-accent">{subject.name}</h3>
+                <Link to={`/subjects/${subject.id}`} className="mt-4 block">
+                  <h3 className="truncate text-[17px] font-semibold tracking-tight hover:text-accent">{subject.name}</h3>
                 </Link>
-                <p className="mt-1 line-clamp-2 min-h-[32px] text-[14px] leading-relaxed text-muted">{subject.description || 'No description yet.'}</p>
+                <p className="mt-2 line-clamp-2 min-h-[44px] text-[14px] leading-6 text-muted">{subject.description || 'No description yet.'}</p>
 
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <Badge tone={priorityTone[subject.priority]}>{subject.priority}</Badge>
                   <Badge tone="neutral">Difficulty {subject.difficulty}/5</Badge>
                   {subject.stats.nextAssessmentAt && (
@@ -98,7 +98,7 @@ export function Subjects() {
                   )}
                 </div>
 
-                <div className="mt-auto pt-4">
+                <div className="mt-auto border-t border-line pt-4">
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="text-faint">
                       {goal ? `${minutesLabel(subject.stats.studiedWeekMinutes)} of ${minutesLabel(goal)} this week` : `${minutesLabel(subject.stats.studiedWeekMinutes)} studied this week`}
@@ -108,7 +108,7 @@ export function Subjects() {
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
                     <div className="h-full rounded-full" style={{ width: `${goal ? Math.min(100, value) : 0}%`, background: subject.color }} />
                   </div>
-                  <div className="mt-2.5 flex items-center gap-3 text-[13px] text-faint">
+                  <div className="mt-3 flex items-center gap-4 text-[13px] text-faint">
                     <span>{subject.stats.openTasks} open</span>
                     <span>{subject.stats.topics} topics</span>
                     <span>{minutesLabel(subject.stats.plannedWeekMinutes)} planned</span>
@@ -122,7 +122,7 @@ export function Subjects() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="flex min-h-[186px] flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-line-strong text-muted transition-colors hover:border-accent hover:text-accent"
+            className="flex min-h-[200px] flex-col items-center justify-center gap-2.5 rounded-card border-2 border-dashed border-line-strong text-muted transition-colors hover:border-accent hover:text-accent"
           >
             <Plus className="size-5" />
             <span className="text-[15px] font-medium">New subject</span>

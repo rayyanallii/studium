@@ -9,7 +9,8 @@ import { AI_DEFAULTS, aiKey } from '../env'
 import { isValidDate, localDate } from '../lib/dates'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { loadAvailability, slotProblem } from '../lib/availability'
-import { ensureProfile, loadAssessments, loadSessions, loadSubjects, loadTasks, expireSessions } from '../lib/rows'
+import { ensureProfile, loadAssessments, loadSessions, loadTasks, expireSessions } from '../lib/rows'
+import { loadSubjects, subjectDirectory, subjectSource } from '../lib/subjects'
 import { aiInputFrom, generateRecommendations } from '../lib/ai'
 import { buildSchedule, capacityByDate, validateSchedule } from '../lib/scheduler'
 import type { SchedulerInput } from '../lib/scheduler'
@@ -125,10 +126,12 @@ async function gather(c: Context<AppContext>, options: z.infer<typeof generateSc
   const startDate = requestedStart < today ? today : requestedStart
   const horizonDays = options.horizonDays ?? prefs.planning_horizon_days
 
-  const allSubjects = await loadSubjects(db, user.sub, timezone, now)
+  const source = await subjectSource(c.env, c.get('accessToken'), user)
+  const directory = await subjectDirectory(source, db, user.sub)
+  const allSubjects = await loadSubjects(db, user.sub, timezone, now, source)
   const subjects = options.subjectIds?.length ? allSubjects.filter((s) => options.subjectIds!.includes(s.id)) : allSubjects
 
-  const allTasks = await loadTasks(db, user.sub, now, { openOnly: true })
+  const allTasks = await loadTasks(db, user.sub, now, directory, { openOnly: true })
   const tasks = allTasks
     .filter((task) => subjects.some((s) => s.id === task.subjectId))
     .filter((task) => task.estimatedMinutes - task.completedMinutes >= 10)
@@ -143,7 +146,7 @@ async function gather(c: Context<AppContext>, options: z.infer<typeof generateSc
     }))
 
   const availability = await loadAvailability(db, user.sub)
-  const assessments = (await loadAssessments(db, user.sub)).filter((a) => a.dueAt >= now - 86_400_000 && subjects.some((s) => s.id === a.subjectId))
+  const assessments = (await loadAssessments(db, user.sub, directory)).filter((a) => a.dueAt >= now - 86_400_000 && subjects.some((s) => s.id === a.subjectId))
 
   const existing = await many<{ starts_at: number; ends_at: number }>(
     db,
@@ -336,7 +339,8 @@ plans.get('/active', async (c) => {
   await expireSessions(db, user.sub, Date.now())
   const row = await one<PlanRow>(db, "SELECT * FROM study_plans WHERE owner_sub = ? AND status = 'active' ORDER BY accepted_at DESC LIMIT 1", user.sub)
   if (!row) return reply(c, { plan: null, sessions: [] })
-  const sessions = await loadSessions(db, user.sub, { from: Date.now() - 7 * 86_400_000, to: Date.now() + 45 * 86_400_000 })
+  const directory = await subjectDirectory(await subjectSource(c.env, c.get('accessToken'), user), db, user.sub)
+  const sessions = await loadSessions(db, user.sub, directory, { from: Date.now() - 7 * 86_400_000, to: Date.now() + 45 * 86_400_000 })
   return reply(c, {
     plan: {
       id: row.id,
@@ -423,7 +427,8 @@ plans.post('/:id/accept', async (c) => {
   }
 
   const accepted = await one<PlanRow>(db, 'SELECT * FROM study_plans WHERE id = ? AND owner_sub = ?', planId, user.sub)
-  const sessions = await loadSessions(db, user.sub, { from: now - 86_400_000, to: now + 45 * 86_400_000 })
+  const directory = await subjectDirectory(await subjectSource(c.env, c.get('accessToken'), user), db, user.sub)
+  const sessions = await loadSessions(db, user.sub, directory, { from: now - 86_400_000, to: now + 45 * 86_400_000 })
   return reply(c, { plan: accepted ? mapPlan(accepted) : null, sessions: sessions.filter((s) => s.planId === planId || s.isLocked), dropped: dropped.length })
 })
 
