@@ -13,6 +13,10 @@ export interface Env {
   APP_ORIGIN?: string
   SUPABASE_URL?: string
   SUPABASE_PUBLISHABLE_KEY?: string
+  /** Server-only key, used for local sign-up confirmation and account cleanup. */
+  SUPABASE_SECRET_KEY?: string
+  /** `1` confirms new sign-ups server-side so local testing is not blocked by email delivery. */
+  AUTO_CONFIRM_SIGNUPS?: string
   // AI planning gateway. OpenAI-compatible; the key never reaches the browser.
   EXPLABS_API_KEY?: string
   AI_BASE_URL?: string

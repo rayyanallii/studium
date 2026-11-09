@@ -40,6 +40,16 @@ Both halves must point at the same project. The publishable key is public; the
 secret key is **not** used by the app and must never be committed or shipped to
 the browser.
 
+## Sign-up without email delivery
+
+The project has no mailer configured, so confirmation emails never arrive and the
+built-in SMTP limit blocks repeat sign-ups. For local use, set
+`AUTO_CONFIRM_SIGNUPS=1` and `SUPABASE_SECRET_KEY` in `.dev.vars`: the Worker then
+creates the account with the server key, marks it confirmed, and returns a normal
+session, so an email and password are enough to sign in again later. Both keys
+stay server-side. For a real deployment, configure SMTP and remove the flag so
+new accounts still verify their address.
+
 Browser auth calls do not go to `*.supabase.co` directly. `supabase-js` rewrites
 its `/auth/v1/*` requests to `/api/auth/*` on the app origin, and the Worker
 forwards them to the configured project with the server-side key. Sign-in,

@@ -13,8 +13,6 @@ import {
   NotebookPen,
   ScanLine,
   Search,
-  Plus,
-  User,
   type LucideIcon,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -45,7 +43,7 @@ const NAV: { to: string; label: string; icon: LucideIcon }[] = [
 export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
   return (
     <NavLink to="/dashboard" className={cx('inline-flex items-center gap-2.5 text-[16px] font-semibold tracking-tight', className)}>
-      <BrandMark className="size-10" />
+      <BrandMark className="size-10 sm:size-11" />
       {!compact && <span className="text-[26px] font-semibold tracking-[-0.04em]">{BRAND}</span>}
     </NavLink>
   )
@@ -57,7 +55,6 @@ export function Shell() {
   const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(current => !current) } }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler) }, [])
-  const name = me?.user.name ?? me?.user.email ?? 'You'
   const isDev = me?.capabilities.auth === 'development'
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -75,8 +72,7 @@ export function Shell() {
         <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><AccountMenu /></div>
       </header>
       <aside className="sticky top-[72px] hidden h-[calc(100vh-72px)] flex-col border-r border-line bg-bg px-3 py-4 lg:flex">
-        <div className="flex gap-3 px-1"><span className="grid size-14 place-items-center rounded-[17px] border-2 border-fg bg-surface-2" title="Personal workspace"><User className="size-6" /></span><button type="button" aria-label="Open study library" onClick={() => navigate('/library')} className="grid size-14 place-items-center rounded-[17px] bg-surface-2 text-muted hover:text-fg"><Plus className="size-7" /></button></div>
-        <p className="mt-6 px-4 text-[14px] font-medium text-faint">Personal workspace</p>
+        <p className="px-4 text-[14px] font-medium text-faint">Personal workspace</p>
         <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto" aria-label="Main">
           {NAV.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} className={state => cx(linkClass(state), to === '/planner' && 'mt-5')}>
@@ -90,9 +86,8 @@ export function Shell() {
             <Settings />
             Settings
           </NavLink>
+          {isDev && <p className="px-4 pt-4 text-xs text-faint">Local workspace</p>}
         </nav>
-
-        <p className="px-4 pt-4 text-xs text-faint">{isDev ? 'Local workspace' : name}</p>
       </aside>
 
       <div className="flex min-w-0 flex-col">
