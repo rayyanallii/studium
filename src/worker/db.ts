@@ -175,12 +175,12 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS study_materials (
     id TEXT PRIMARY KEY, owner_sub TEXT NOT NULL, title TEXT NOT NULL,
     file_name TEXT, mime TEXT NOT NULL, bytes INTEGER NOT NULL DEFAULT 0,
-    object_key TEXT, extracted_text TEXT NOT NULL, created_at INTEGER NOT NULL
+    object_key TEXT, extracted_text TEXT NOT NULL, subject_id TEXT, created_at INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS materials_owner ON study_materials(owner_sub, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS study_artifacts (
     id TEXT PRIMARY KEY, owner_sub TEXT NOT NULL, title TEXT NOT NULL,
-    kind TEXT NOT NULL, source_ids TEXT NOT NULL, content TEXT NOT NULL,
+    kind TEXT NOT NULL, source_ids TEXT NOT NULL, subject_id TEXT, content TEXT NOT NULL,
     created_at INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS artifacts_owner ON study_artifacts(owner_sub, created_at DESC)`,
@@ -201,11 +201,22 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS attempts_artifact ON quiz_attempts(owner_sub, artifact_id, created_at)`,
 ]
 
+// Columns added after a table first shipped. Each runs once and is ignored when
+// the column already exists, so old databases catch up on their next request.
+const MIGRATIONS = [
+  'ALTER TABLE study_materials ADD COLUMN subject_id TEXT',
+  'ALTER TABLE study_artifacts ADD COLUMN subject_id TEXT',
+]
+
 let ready: Promise<void> | undefined
 
 export function ensureSchema(db: D1Database): Promise<void> {
   ready ??= db.batch(SCHEMA.map((sql) => db.prepare(sql))).then(
-    () => undefined,
+    async () => {
+      for (const sql of MIGRATIONS) {
+        try { await db.prepare(sql).run() } catch { /* column already present */ }
+      }
+    },
     (error) => {
       ready = undefined
       throw error

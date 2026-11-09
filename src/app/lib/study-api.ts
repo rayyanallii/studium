@@ -5,6 +5,8 @@ import type { NotebookMessage, QuizAttempt, StudyArtifact, StudyDetail, StudyKin
 
 export const useMaterials = () => useQuery({ queryKey: ['materials'], queryFn: () => api<{ items: StudyMaterial[] }>('/study/materials') })
 export const useStudyArtifacts = () => useQuery({ queryKey: ['studyArtifacts'], queryFn: () => api<{ items: StudyArtifact[] }>('/study/artifacts') })
+export const useSubjectMaterials = (subjectId: string) => useQuery({ queryKey: ['materials', { subjectId }], enabled: Boolean(subjectId), queryFn: () => api<{ items: StudyMaterial[] }>(`/study/materials?subjectId=${subjectId}`) })
+export const useSubjectArtifacts = (subjectId: string) => useQuery({ queryKey: ['studyArtifacts', { subjectId }], enabled: Boolean(subjectId), queryFn: () => api<{ items: StudyArtifact[] }>(`/study/artifacts?subjectId=${subjectId}`) })
 export const useStudyDetail = (id: string) => useQuery({ queryKey: ['studyArtifact', id], queryFn: () => api<StudyDetail>(`/study/artifacts/${id}`) })
 
 export function useStudyMutation<T, R>(fn: (input: T) => Promise<R>) {

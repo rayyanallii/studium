@@ -6,14 +6,15 @@ import { aiKey } from '../env'
 import { exec, id, many, one } from '../db'
 import { fail, isResponse, parseBody, reply } from '../lib/http'
 import { answerNotebook, extractImage, generateStudy, gradeQuiz } from '../lib/study-ai'
+import { subjectExists, subjectSource } from '../lib/subjects'
 import { STUDY_LIMITS, type StudyArtifact, type StudyMaterial, type NotebookMessage, type QuizAttempt } from '../../shared/study'
 
 export const study = new Hono<AppContext>()
 study.use('*', bodyLimit({ maxSize: STUDY_LIMITS.fileBytes + 500000, onError: c => fail(c, 413, 'too_large', 'Files must be 10 MB or smaller.') }))
-type MaterialRow = { id: string; title: string; file_name: string | null; mime: string; bytes: number; object_key: string | null; extracted_text: string; created_at: number }
-type ArtifactRow = { id: string; title: string; kind: StudyArtifact['kind']; source_ids: string; content: string; created_at: number }
-const material = (row: MaterialRow): StudyMaterial => ({ id: row.id, title: row.title, fileName: row.file_name, mime: row.mime, bytes: row.bytes, text: row.extracted_text, createdAt: row.created_at })
-const artifact = (row: ArtifactRow): StudyArtifact => ({ id: row.id, title: row.title, kind: row.kind, sourceIds: JSON.parse(row.source_ids), content: JSON.parse(row.content), createdAt: row.created_at, learned: [] })
+type MaterialRow = { id: string; title: string; file_name: string | null; mime: string; bytes: number; object_key: string | null; extracted_text: string; subject_id: string | null; created_at: number }
+type ArtifactRow = { id: string; title: string; kind: StudyArtifact['kind']; source_ids: string; subject_id: string | null; content: string; created_at: number }
+const material = (row: MaterialRow): StudyMaterial => ({ id: row.id, title: row.title, fileName: row.file_name, mime: row.mime, bytes: row.bytes, text: row.extracted_text, subjectId: row.subject_id ?? null, createdAt: row.created_at })
+const artifact = (row: ArtifactRow): StudyArtifact => ({ id: row.id, title: row.title, kind: row.kind, sourceIds: JSON.parse(row.source_ids), subjectId: row.subject_id ?? null, content: JSON.parse(row.content), createdAt: row.created_at, learned: [] })
 const errorMessage = (error: unknown) => error instanceof Error && !(error instanceof SyntaxError) ? error.message : 'The AI returned an unreadable response. Please try again.'
 
 async function reserveAI(db: D1Database, owner: string, limit: number) {
@@ -31,7 +32,10 @@ async function sourcesFor(db: D1Database, owner: string, ids: string[]) {
 }
 
 study.get('/materials', async c => {
-  const rows = await many<MaterialRow>(c.get('db'), 'SELECT * FROM study_materials WHERE owner_sub = ? ORDER BY created_at DESC LIMIT 100', c.get('user').sub)
+  const subjectId = c.req.query('subjectId')
+  const rows = subjectId
+    ? await many<MaterialRow>(c.get('db'), 'SELECT * FROM study_materials WHERE owner_sub = ? AND subject_id = ? ORDER BY created_at DESC LIMIT 100', c.get('user').sub, subjectId)
+    : await many<MaterialRow>(c.get('db'), 'SELECT * FROM study_materials WHERE owner_sub = ? ORDER BY created_at DESC LIMIT 100', c.get('user').sub)
   return reply(c, { items: rows.map(material) })
 })
 
@@ -42,11 +46,16 @@ study.post('/materials', async c => {
   let form: FormData
   try { form = await c.req.raw.formData() } catch { return fail(c, 400, 'invalid_upload', 'Choose a file or paste your notes.') }
   const title = String(form.get('title') ?? '').trim().slice(0, 160)
+  const subjectId = String(form.get('subjectId') ?? '').trim() || null
   let text = String(form.get('text') ?? '').trim()
   const file = form.get('file')
   let mime = 'text/plain', bytes = 0, fileName: string | null = null, objectKey: string | null = null, buffer: ArrayBuffer | null = null
   const sourceId = id()
   if (!title) return fail(c, 422, 'title_required', 'Give this source a title.')
+  if (subjectId) {
+    const source = await subjectSource(c.env, c.get('accessToken'), c.get('user'))
+    if (!(await subjectExists(source, db, owner, subjectId))) return fail(c, 422, 'unknown_subject', 'That subject does not exist in your workspace.')
+  }
   if (file instanceof File) {
     if (!c.env.FILES) return fail(c, 503, 'storage_missing', 'File storage is not connected. You can still paste notes.')
     if (file.size === 0 || file.size > STUDY_LIMITS.fileBytes) return fail(c, 413, 'file_size', 'Upload a non-empty file of 10 MB or less.')
@@ -72,7 +81,7 @@ study.post('/materials', async c => {
   if (text.length > STUDY_LIMITS.textCharacters) return fail(c, 422, 'text_too_long', 'This source is too long. Split it into sections under 80,000 characters.')
   if (buffer && objectKey) await c.env.FILES!.put(objectKey, buffer, { httpMetadata: { contentType: mime } })
   try {
-    await exec(db, 'INSERT INTO study_materials (id, owner_sub, title, file_name, mime, bytes, object_key, extracted_text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', sourceId, owner, title, fileName, mime, bytes, objectKey, text, Date.now())
+    await exec(db, 'INSERT INTO study_materials (id, owner_sub, title, file_name, mime, bytes, object_key, extracted_text, subject_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', sourceId, owner, title, fileName, mime, bytes, objectKey, text, subjectId, Date.now())
   } catch (error) { if (objectKey) await c.env.FILES!.delete(objectKey); throw error }
   return reply(c, { id: sourceId }, 201)
 })
@@ -98,7 +107,10 @@ study.delete('/materials/:id', async c => {
 })
 
 study.get('/artifacts', async c => {
-  const rows = await many<ArtifactRow>(c.get('db'), 'SELECT * FROM study_artifacts WHERE owner_sub = ? ORDER BY created_at DESC LIMIT 100', c.get('user').sub)
+  const subjectId = c.req.query('subjectId')
+  const rows = subjectId
+    ? await many<ArtifactRow>(c.get('db'), 'SELECT * FROM study_artifacts WHERE owner_sub = ? AND subject_id = ? ORDER BY created_at DESC LIMIT 100', c.get('user').sub, subjectId)
+    : await many<ArtifactRow>(c.get('db'), 'SELECT * FROM study_artifacts WHERE owner_sub = ? ORDER BY created_at DESC LIMIT 100', c.get('user').sub)
   return reply(c, { items: rows.map(artifact) })
 })
 
@@ -114,9 +126,10 @@ study.post('/generate', async c => {
   if (!usageId) return fail(c, 429, 'ai_limit', 'Your study AI limit has been reached. Try again tomorrow.')
   try {
     const { title, ...content } = await generateStudy(c.env, input.kind, sources)
+    const subjectId = sources.find(source => source.subjectId)?.subjectId ?? null
     const artifactId = id()
     const results = await db.batch([
-      db.prepare(`INSERT INTO study_artifacts (id, owner_sub, title, kind, source_ids, content, created_at) SELECT ?, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM study_materials WHERE owner_sub = ? AND id IN (${input.sourceIds.map(() => '?').join(',')})) = ?`).bind(artifactId, owner, title, input.kind, JSON.stringify(input.sourceIds), JSON.stringify(content), Date.now(), owner, ...input.sourceIds, input.sourceIds.length),
+      db.prepare(`INSERT INTO study_artifacts (id, owner_sub, title, kind, source_ids, subject_id, content, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM study_materials WHERE owner_sub = ? AND id IN (${input.sourceIds.map(() => '?').join(',')})) = ?`).bind(artifactId, owner, title, input.kind, JSON.stringify(input.sourceIds), subjectId, JSON.stringify(content), Date.now(), owner, ...input.sourceIds, input.sourceIds.length),
       db.prepare('UPDATE ai_generation_usage SET status = ? WHERE id = ?').bind('completed', usageId),
     ])
     if (!results[0].meta.changes) return fail(c, 409, 'source_changed', 'A selected source was removed during generation. Select your sources again.')

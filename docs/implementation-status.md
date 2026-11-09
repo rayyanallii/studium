@@ -146,6 +146,19 @@ Supabase SSR helpers should be adopted when Next.js replaces the current SPA.
 - Experiential gateway test used `gpt-6-luna` and returned
   `Studium gateway connected.` Usage: 14 input + 9 output = 23 tokens.
 
+### Subject-linked study material
+
+- Adding a source asks for an optional subject; sources store it on the row.
+- A generated deck, quiz or notebook inherits the subject of its first source,
+  so the subject page can list the sets built from its material.
+- Subject pages gained a Study material section with their sources and sets,
+  each set linking to its study view.
+- The two new columns are added by an idempotent migration in `db.ts`, so the
+  local database catches up on the next request.
+- Checked with a real session: source created under Chemistry, filtered by
+  subject, then deleted; subject page rendered at 1440px and 390px with no
+  horizontal overflow; typecheck, 6 tests and the production build pass.
+
 Original `supabase.md` setup notes contain credentials and are excluded from
 Git. Environment files, build output, local databases, and browser artifacts
 are also excluded. The public setup example contains no secret key.

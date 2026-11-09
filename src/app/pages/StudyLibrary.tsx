@@ -1,14 +1,15 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { ArrowRight, Check, FileText, Image, Layers, Plus, Search, Trash2, Upload } from 'lucide-react'
-import { Alert, Badge, Button, Card, Checkbox, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Segmented, Skeleton, Textarea, useToast } from '../components/ui'
+import { Alert, Badge, Button, Card, Checkbox, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Segmented, Select, Skeleton, Textarea, useToast } from '../components/ui'
 import { STUDY_TOOLS, StudyTools } from '../components/StudyTools'
 import { useDeleteArtifact, useDeleteMaterial, useGenerateStudy, useMaterials, useStudyArtifacts, useUploadMaterial } from '../lib/study-api'
+import { useSubjects } from '../lib/api'
 import { extractMaterial } from '../lib/extract-material'
 import { STUDY_LIMITS, type StudyKind, type StudyMaterial } from '../../shared/study'
 
 export function StudyLibrary({ kind }: { kind?: StudyKind }) {
-  const materials = useMaterials(), artifacts = useStudyArtifacts()
+  const materials = useMaterials(), artifacts = useStudyArtifacts(), subjectsQuery = useSubjects()
   const generate = useGenerateStudy(), removeMaterial = useDeleteMaterial(), removeArtifact = useDeleteArtifact()
   const [selected, setSelected] = useState<string[]>([])
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -19,6 +20,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
   const navigate = useNavigate(), toast = useToast()
   const tool = STUDY_TOOLS.find(tool => tool.kind === kind)
   const sources = materials.data?.items ?? []
+  const subjectName = (subjectId: string | null) => (subjectId ? subjectsQuery.data?.items.find(subject => subject.id === subjectId)?.name : null)
   const sets = (artifacts.data?.items ?? []).filter(item => (!kind || item.kind === kind) && item.title.toLowerCase().includes(search.toLowerCase()))
   const selection = selected.filter(id => sources.some(source => source.id === id))
 
@@ -43,7 +45,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
           const count = item.content.cards?.length ?? item.content.questions?.length ?? item.content.sections?.length
           return <Card key={item.id} className="group flex flex-col gap-0 border border-line p-0 shadow-none">
             <Link to={`/study/${item.id}`} className="flex flex-1 flex-col p-5"><div className="mb-4 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-[12px]" style={{ background: `var(--study-${config.color})`, color: `var(--study-${config.color}-ink)` }}><config.icon className="size-5" /></span><span className="text-[14px] text-muted">{config.title}</span></div><h3 className="text-[15px] font-semibold leading-relaxed">{item.title}</h3><p className="mt-2 text-[14px] text-muted">{count} {item.kind === 'flashcards' ? 'cards' : item.kind === 'quiz' ? 'questions' : 'sections'} · {item.sourceIds.length} {item.sourceIds.length === 1 ? 'source' : 'sources'}</p></Link>
-            <div className="flex items-center justify-between border-t border-line px-5 py-2"><span className="text-[11px] text-faint">{new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span><Button variant="ghost" size="icon-sm" aria-label={`Delete ${item.title}`} onClick={() => setDeleting({ id: item.id, title: item.title, type: 'set' })}><Trash2 className="size-3.5" /></Button></div>
+            <div className="flex items-center justify-between border-t border-line px-5 py-2"><span className="text-[11px] text-faint">{[subjectName(item.subjectId), new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })].filter(Boolean).join(' · ')}</span><Button variant="ghost" size="icon-sm" aria-label={`Delete ${item.title}`} onClick={() => setDeleting({ id: item.id, title: item.title, type: 'set' })}><Trash2 className="size-3.5" /></Button></div>
           </Card>
         })}</div>}
         <div className="flex items-center justify-between pt-3"><h2 className="text-[16px] font-semibold">Source materials <span className="ml-1 text-[14px] font-normal text-muted">{sources.length}</span></h2><span className="text-[14px] text-muted">Choose up to 4</span></div>
@@ -51,7 +53,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
           {materials.isLoading ? <Skeleton className="h-32" /> : sources.length === 0 ? <button onClick={() => setUploadOpen(true)} className="flex w-full flex-col items-center gap-3 p-10 text-center hover:bg-surface-2"><Upload className="size-6 text-muted" /><span className="text-[14px] font-medium">A home for your course materials</span><span className="text-[14px] text-muted">PDFs, Word documents, pictures and pasted notes</span></button> : sources.map(source => <div key={source.id} className="flex items-center gap-3 border-b border-line px-4 py-4 last:border-b-0">
             <Checkbox label={`Select ${source.title}`} checked={selection.includes(source.id)} onChange={checked => { if (checked && selection.length >= 4) return toast('Select up to 4 sources.'); setSelected(ids => checked ? [...ids, source.id] : ids.filter(id => id !== source.id)) }} />
             <span className="hidden size-9 shrink-0 place-items-center rounded-tile bg-surface-2 text-muted sm:grid">{source.mime.startsWith('image/') ? <Image className="size-4" /> : <FileText className="size-4" />}</span>
-            <button onClick={() => setPreview(source)} className="min-w-0 flex-1 text-left"><span className="block truncate text-[15px] font-medium">{source.title}</span><span className="mt-1 block text-[11px] text-muted">{source.fileName?.split('.').pop()?.toUpperCase() || 'NOTE'} · {source.text.length.toLocaleString()} characters</span></button>
+            <button onClick={() => setPreview(source)} className="min-w-0 flex-1 text-left"><span className="block truncate text-[15px] font-medium">{source.title}</span><span className="mt-1 block text-[11px] text-muted">{source.fileName?.split('.').pop()?.toUpperCase() || 'NOTE'} · {source.text.length.toLocaleString()} characters{subjectName(source.subjectId) ? ` · ${subjectName(source.subjectId)}` : ''}</span></button>
             <Badge tone="success"><Check className="size-3" />Ready</Badge><Button variant="ghost" size="icon-sm" aria-label={`Delete source ${source.title}`} onClick={() => setDeleting({ id: source.id, title: source.title, type: 'source' })}><Trash2 /></Button>
           </div>)}
         </div>
@@ -75,7 +77,8 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
 }
 
 function UploadMaterialDialog({ open, onClose, onUploaded }: { open: boolean; onClose: () => void; onUploaded: (id: string) => void }) {
-  const [mode, setMode] = useState<'file' | 'notes'>('file'), [title, setTitle] = useState(''), [text, setText] = useState(''), [file, setFile] = useState<File | null>(null)
+  const [mode, setMode] = useState<'file' | 'notes'>('file'), [title, setTitle] = useState(''), [text, setText] = useState(''), [file, setFile] = useState<File | null>(null), [subjectId, setSubjectId] = useState('')
+  const subjects = useSubjects().data?.items ?? []
   const [status, setStatus] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false), [dragging, setDragging] = useState(false)
   const upload = useUploadMaterial(), input = useRef<HTMLInputElement>(null)
   const choose = (chosen?: File) => { if (!chosen) return; setFile(chosen); setTitle(chosen.name.replace(/\.[^.]+$/, '')); setError('') }
@@ -84,10 +87,11 @@ function UploadMaterialDialog({ open, onClose, onUploaded }: { open: boolean; on
     try {
       if (mode === 'file' && !file) throw new Error('Choose a source file.')
       const body = new FormData(); body.set('title', title.trim())
+      if (subjectId) body.set('subjectId', subjectId)
       if (mode === 'file' && file) { body.set('file', file); body.set('text', await extractMaterial(file, setStatus)); setStatus(/\.(png|jpe?g|webp)$/i.test(file.name) ? 'Reading the image with AI…' : 'Saving your source…') }
       else { body.set('text', text); setStatus('Saving your notes…') }
       const result = await upload.mutateAsync(body)
-      onUploaded(result.id); onClose(); setTitle(''); setText(''); setFile(null)
+      onUploaded(result.id); onClose(); setTitle(''); setText(''); setFile(null); setSubjectId('')
     } catch (error) { setError(error instanceof Error ? error.message : 'Upload failed. Try again.') }
     finally { setBusy(false); setStatus('') }
   }
@@ -98,6 +102,7 @@ function UploadMaterialDialog({ open, onClose, onUploaded }: { open: boolean; on
         <Upload className="mx-auto mb-3 size-6 text-accent" /><p className="break-all text-[15px] font-medium">{file ? file.name : 'Drop a file here, or browse'}</p><p className="mt-2 text-[14px] text-muted">PDF, DOCX, PNG, JPEG or WebP · Up to 10 MB</p><Button className="mt-4" onClick={() => input.current?.click()} disabled={busy}>{file ? 'Choose another file' : 'Browse files'}</Button>
       </div>}
       <Field label="Title"><Input value={title} onChange={event => setTitle(event.target.value)} maxLength={160} disabled={busy} placeholder="e.g. Biology — Cell structure" /></Field>
+      <Field label="Subject" hint="Optional. Keeps this material next to the subject it belongs to."><Select value={subjectId} onValueChange={setSubjectId} disabled={busy}><option value="">No subject</option>{subjects.map(subject => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</Select></Field>
       {mode === 'notes' && <Field label="Your notes" hint="At least 40 characters. Paste the material you want to learn."><Textarea value={text} onChange={event => setText(event.target.value)} maxLength={STUDY_LIMITS.textCharacters} className="min-h-[180px]" disabled={busy} /></Field>}
       <p className="text-[13px] leading-relaxed text-muted">Documents are read as text; PDFs support up to 50 text-based pages. Upload scanned pages as images. Image text is read by AI and should be reviewed after upload.</p>
       {busy && <p role="status" className="text-[15px] text-accent">{status}</p>}{error && <Alert tone="danger">{error}</Alert>}

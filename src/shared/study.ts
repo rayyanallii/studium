@@ -1,7 +1,7 @@
 export type StudyKind = 'flashcards' | 'quiz' | 'notebook'
 export interface StudyMaterial {
   id: string; title: string; fileName: string | null; mime: string; bytes: number;
-  text: string; createdAt: number;
+  text: string; subjectId: string | null; createdAt: number;
 }
 export interface Citation { sourceId: string; quote: string }
 export interface Flashcard extends Citation { front: string; back: string }
@@ -9,8 +9,8 @@ export interface QuizQuestion extends Citation { question: string; options: stri
 export interface NotebookSection extends Citation { heading: string; body: string }
 export interface StudyContent { cards?: Flashcard[]; questions?: QuizQuestion[]; sections?: NotebookSection[] }
 export interface StudyArtifact {
-  id: string; title: string; kind: StudyKind; sourceIds: string[]; content: StudyContent;
-  createdAt: number; learned: number[];
+  id: string; title: string; kind: StudyKind; sourceIds: string[]; subjectId: string | null;
+  content: StudyContent; createdAt: number; learned: number[];
 }
 export interface NotebookMessage { id: string; question: string; answer: string; citations: Citation[]; createdAt: number }
 export interface QuizAttempt { id: string; score: number; total: number; answers: number[]; createdAt: number }

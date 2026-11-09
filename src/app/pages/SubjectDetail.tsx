@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, CalendarDays, Check, Pencil, Plus, Trash } from 'lucide-react'
+import { ArrowLeft, BookOpen, CalendarDays, Check, FileText, Pencil, Plus, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
@@ -11,6 +11,7 @@ import { TaskRow } from '../components/TaskRow'
 import { FieldInput, FieldTextarea, NumberInput } from '../components/fields'
 import { Alert, Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, PageHeader, Select, Skeleton, useToast } from '../components/ui'
 import { useAssessments, useDeleteTopic, useMe, useSaveTopic, useSubject, useSubjectAnalytics, useTasks } from '../lib/api'
+import { useSubjectArtifacts, useSubjectMaterials } from '../lib/study-api'
 import { cx } from '../lib/cx'
 import { dateLabel, minutesLabel, untilLabel } from '../lib/format'
 
@@ -22,6 +23,8 @@ export function SubjectDetail() {
   const { data: taskData } = useTasks({ subjectId: id })
   const { data: assessmentData } = useAssessments()
   const { data: analytics } = useSubjectAnalytics(id)
+  const { data: materialData } = useSubjectMaterials(id ?? '')
+  const { data: artifactData } = useSubjectArtifacts(id ?? '')
   const deleteTopic = useDeleteTopic()
   const toast = useToast()
 
@@ -47,6 +50,8 @@ export function SubjectDetail() {
   const assessments = (assessmentData?.items ?? []).filter((assessment) => assessment.subjectId === subject.id)
   const openTasks = tasks.filter((task) => task.status === 'todo' || task.status === 'in_progress')
   const doneTasks = tasks.filter((task) => task.status === 'completed')
+  const studySources = materialData?.items ?? []
+  const studySets = artifactData?.items ?? []
 
   return (
     <div className="flex flex-col gap-6">
@@ -171,6 +176,65 @@ export function SubjectDetail() {
           </Card>
         </div>
       </div>
+
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+          <div>
+            <h2 className="text-[14px] font-semibold">Study material</h2>
+            <p className="mt-0.5 text-[13px] text-faint">Sources, flashcards, quizzes and notebooks for this subject.</p>
+          </div>
+          <Link to="/library">
+            <Button size="sm">
+              <Plus />
+              Add
+            </Button>
+          </Link>
+        </div>
+        <div className="grid gap-6 p-5 md:grid-cols-2">
+          <section>
+            <div className="flex items-center justify-between">
+              <h3 className="text-[13px] font-medium text-muted">Sources</h3>
+              <span className="text-[12px] text-faint">{studySources.length}</span>
+            </div>
+            {studySources.length === 0 ? (
+              <p className="mt-2 text-[14px] text-muted">No sources yet. Add notes or a PDF for {subject.name} from the study library.</p>
+            ) : (
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {studySources.map((source) => (
+                  <li key={source.id} className="flex items-center gap-2 rounded-tile px-1 py-1.5">
+                    <FileText className="size-3.5 shrink-0 text-faint" />
+                    <span className="min-w-0 flex-1 truncate text-[15px]">{source.title}</span>
+                    <span className="shrink-0 text-[11px] text-faint">{source.text.length.toLocaleString()} chars</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <section>
+            <div className="flex items-center justify-between">
+              <h3 className="text-[13px] font-medium text-muted">Flashcards, quizzes and notebooks</h3>
+              <span className="text-[12px] text-faint">{studySets.length}</span>
+            </div>
+            {studySets.length === 0 ? (
+              <p className="mt-2 text-[14px] text-muted">Create a set from these sources in the study library.</p>
+            ) : (
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {studySets.map((item) => {
+                  const count = item.content.cards?.length ?? item.content.questions?.length ?? item.content.sections?.length ?? 0
+                  return (
+                    <li key={item.id}>
+                      <Link to={`/study/${item.id}`} className="flex items-center gap-2 rounded-tile px-1 py-1.5 hover:bg-surface-2">
+                        <span className="min-w-0 flex-1 truncate text-[15px]">{item.title}</span>
+                        <Badge tone="neutral">{item.kind === 'quiz' ? 'Quiz' : item.kind === 'notebook' ? 'Notebook' : 'Flashcards'} · {count}</Badge>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+      </Card>
 
       <Card className="p-4">
         <div className="flex items-center justify-between">
