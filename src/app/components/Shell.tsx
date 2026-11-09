@@ -26,6 +26,7 @@ import { useMe } from '../lib/api'
 import { signOut } from '../lib/auth'
 import { cx } from '../lib/cx'
 import { AccountMenu } from './AccountMenu'
+import { BrandMark } from './BrandMark'
 import { Button, Dialog, Drawer, Input } from './ui'
 
 const NAV: { to: string; label: string; icon: LucideIcon }[] = [
@@ -44,9 +45,7 @@ const NAV: { to: string; label: string; icon: LucideIcon }[] = [
 export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
   return (
     <NavLink to="/dashboard" className={cx('inline-flex items-center gap-2.5 text-[16px] font-semibold tracking-tight', className)}>
-      <span className="relative grid size-8 shrink-0 place-items-center rounded-[7px] bg-[#ff5a1f] text-white">
-        <BookOpen className="size-[18px]" strokeWidth={1.7} />
-      </span>
+      <BrandMark className="size-10" />
       {!compact && <span className="text-[26px] font-semibold tracking-[-0.04em]">{BRAND}</span>}
     </NavLink>
   )

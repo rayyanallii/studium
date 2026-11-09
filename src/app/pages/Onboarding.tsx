@@ -1,4 +1,5 @@
 import { ArrowLeft, ArrowRight, Check, Clock, Plus, Sparkles, Trash } from 'lucide-react'
+import { BrandMark } from '../components/BrandMark'
 import { motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -154,10 +155,7 @@ export function Onboarding() {
     <div className="min-h-screen bg-bg px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[720px]">
         <div className="flex items-center gap-2.5">
-          <span className="relative grid size-8 place-items-center rounded-[10px] bg-accent">
-            <span className="absolute left-[7px] top-[8px] h-[13px] w-[7px] rounded-l-[2px] bg-on-accent/55" />
-            <span className="relative ml-[7px] h-[13px] w-[7px] rounded-r-[2px] bg-on-accent" />
-          </span>
+          <BrandMark className="size-9" />
           <span className="font-semibold tracking-tight text-[20px]">Studium</span>
           <span className="ml-auto text-[14px] text-faint">
             Step {step} of 6

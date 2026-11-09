@@ -1,6 +1,7 @@
 import { animate, stagger } from 'animejs'
 import { ArrowRight, BarChart, CalendarCheck, Check, Clock, Sparkles, Target, WandSparkles, Layers, NotebookPen, ScanLine, Upload } from 'lucide-react'
 import { motion } from 'motion/react'
+import { BrandMark } from '../components/BrandMark'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 
@@ -49,10 +50,7 @@ export function Landing() {
       <header className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-5 sm:px-8">
           <Link to="/" className="inline-flex items-center gap-2.5">
-            <span className="relative grid size-8 place-items-center rounded-[10px] bg-accent">
-              <span className="absolute left-[7px] top-[8px] h-[13px] w-[7px] rounded-l-[2px] bg-on-accent/55" />
-              <span className="relative ml-[7px] h-[13px] w-[7px] rounded-r-[2px] bg-on-accent" />
-            </span>
+            <BrandMark className="size-9" />
             <span className="font-semibold tracking-tight text-[20px]">Studium</span>
           </Link>
           <nav className="hidden items-center gap-6 text-[15px] text-muted sm:flex">
@@ -212,9 +210,7 @@ export function Landing() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-sm">
             <div className="inline-flex items-center gap-2.5">
-              <span className="relative grid size-7 place-items-center rounded-[9px] bg-accent">
-                <span className="ml-1 h-3 w-1.5 rounded-r-[2px] bg-on-accent" />
-              </span>
+              <BrandMark className="size-8" />
               <span className="font-serif text-[19px]">Studium</span>
             </div>
             <p className="mt-2.5 text-[14px] leading-relaxed text-muted">An AI study planner that turns academic workload into a realistic schedule you can follow.</p>

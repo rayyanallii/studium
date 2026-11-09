@@ -4,6 +4,7 @@ import { lazy, Suspense } from 'react'
 import { MotionConfig } from 'motion/react'
 
 import type { Me } from '../shared/types'
+import { BrandMark } from './components/BrandMark'
 import { Shell } from './components/Shell'
 import { Spinner, ToastProvider } from './components/ui'
 import { ThemeProvider } from './components/ThemeProvider'
@@ -33,9 +34,7 @@ function Splash() {
   return (
     <div className="grid min-h-screen place-items-center bg-bg">
       <div className="flex flex-col items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-[12px] bg-accent">
-          <span className="ml-1.5 h-4 w-2 rounded-r-[3px] bg-white" />
-        </span>
+        <BrandMark className="size-12" />
         <Spinner />
       </div>
     </div>

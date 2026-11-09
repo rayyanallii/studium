@@ -1,7 +1,8 @@
-import { ArrowLeft, ArrowRight, BookOpen, MailCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, MailCheck } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
+import { BrandMark } from '../components/BrandMark'
 import { Alert, Button, Field, Input } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeProvider'
 import { safeNext } from '../lib/auth'
@@ -16,8 +17,19 @@ const COPY: Record<Mode, { title: string; description: string; submit: string }>
   reset: { title: 'Choose a new password', description: 'Pick something you have not used before.', submit: 'Save password' },
 }
 
+const SUPABASE_HOST = (() => {
+  try {
+    return new URL(import.meta.env.VITE_SUPABASE_URL).host
+  } catch {
+    return 'Supabase'
+  }
+})()
+
 function friendly(message: string): string {
   const text = message.toLowerCase()
+  if (text.includes('failed to fetch') || text.includes('networkerror') || text.includes('load failed')) {
+    return `Could not reach the Supabase project at ${SUPABASE_HOST}. Check your connection, VPN or ad blocker, then try again.`
+  }
   if (text.includes('invalid login credentials')) return 'That email and password combination does not match an account.'
   if (text.includes('email not confirmed')) return 'Confirm your email address first — check your inbox for the link.'
   if (text.includes('user already registered')) return 'An account already exists for this email. Sign in instead.'
@@ -32,9 +44,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <Link to="/" className="inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-tight">
-          <span className="grid size-8 place-items-center rounded-[10px] bg-accent text-on-accent">
-            <BookOpen className="size-[18px]" strokeWidth={1.8} />
-          </span>
+          <BrandMark className="size-9" />
           Studium
         </Link>
         <ThemeToggle />
