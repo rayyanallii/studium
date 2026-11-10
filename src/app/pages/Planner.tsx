@@ -41,15 +41,19 @@ export function Planner() {
   }
 
   const { startHour, endHour } = useMemo(() => {
-    let earliest = 17
-    let latest = 21
+    // The grid is drawn from startHour, so sessions must be positioned
+    // relative to it rather than to midnight.
+    if (sessions.length === 0) return { startHour: 8, endHour: 22 }
+    let earliest = 24
+    let latest = 0
     for (const session of sessions) {
       const start = DateTime.fromMillis(session.startsAt, { zone: timezone })
       const end = DateTime.fromMillis(session.endsAt, { zone: timezone })
+      const endHour = end.minute > 0 ? end.hour + 1 : end.hour
       if (start.hour < earliest) earliest = start.hour
-      if (end.hour + (end.minute > 0 ? 1 : 0) > latest) latest = end.hour + (end.minute > 0 ? 1 : 0)
+      if (endHour > latest) latest = endHour
     }
-    return { startHour: Math.max(0, Math.min(6, earliest - 1)), endHour: Math.min(24, Math.max(22, latest + 1)) }
+    return { startHour: Math.max(0, earliest - 1), endHour: Math.min(24, Math.max(earliest + 4, latest + 1)) }
   }, [sessions, timezone])
 
   const label =
@@ -66,7 +70,7 @@ export function Planner() {
           <>
             <Button onClick={() => setNewOpen(true)}>
               <Plus />
-              Session
+              Add session
             </Button>
             <Button variant="primary" onClick={() => setPlanOpen(true)}>
               <Sparkles />
@@ -218,7 +222,7 @@ function CalendarGrid({
                     <div key={hour} className="border-b border-line/50" style={{ height: hourHeight }} />
                   ))}
                   {daySessions.map((session) => {
-                    const top = ((session.startsAt - dayStart) / 3_600_000) * hourHeight
+                    const top = ((session.startsAt - dayStart) / 3_600_000 - startHour) * hourHeight
                     const height = Math.max(24, ((session.endsAt - session.startsAt) / 3_600_000) * hourHeight - 3)
                     const done = session.status === 'completed'
                     const missed = session.status === 'missed' || session.status === 'skipped'

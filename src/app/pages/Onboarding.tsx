@@ -121,7 +121,7 @@ export function Onboarding() {
     try {
       const result = await generate.mutateAsync({ requestId: crypto.randomUUID(), planningStyle: planStyle.planningStyle, horizonDays: planStyle.planningHorizonDays })
       if (!result.proposal) {
-        setError(result.message ?? 'Add at least one subject and task to generate a plan.')
+        setError(result.message ?? 'Nothing to schedule yet. Add a task, or set a weekly target on a subject.')
         return
       }
       setProposal(result.proposal)

@@ -85,9 +85,9 @@ export function Subjects() {
                 <Link to={`/subjects/${subject.id}`} className="mt-4 block">
                   <h3 className="truncate text-[17px] font-semibold tracking-tight hover:text-accent">{subject.name}</h3>
                 </Link>
-                <p className="mt-2 line-clamp-2 min-h-[44px] text-[14px] leading-6 text-muted">{subject.description || 'No description yet.'}</p>
+                <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.55] text-muted">{subject.description || 'No description yet.'}</p>
 
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mb-5 mt-3.5 flex flex-wrap gap-2">
                   <Badge tone={priorityTone[subject.priority]}>{subject.priority}</Badge>
                   <Badge tone="neutral">Difficulty {subject.difficulty}/5</Badge>
                   {subject.stats.nextAssessmentAt && (

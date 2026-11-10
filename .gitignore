@@ -12,5 +12,6 @@ dist
 .playwright-cli
 output
 .freebuff
+.claude
 # Original setup notes contain credentials; keep them local.
 supabase.md

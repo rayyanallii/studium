@@ -172,6 +172,8 @@ interface Candidate {
   remaining: number
   score: number
   deadline: number | null
+  /** Derived from a subject's weekly target rather than a real task. */
+  synthetic?: boolean
 }
 
 function scoreFor(candidate: Omit<Candidate, 'score'>, input: SchedulerInput, horizonEnd: number): number {
@@ -238,6 +240,28 @@ export function buildSchedule(input: SchedulerInput): SchedulerResult {
     const candidate: Candidate = { task, subject, remaining, score: 0, deadline: task.dueAt }
     candidate.score = scoreFor(candidate, input, horizonEnd)
     candidates.push(candidate)
+  }
+
+  // Nothing actionable captured as tasks yet: a subject's weekly target still
+  // describes real study time, so plan blocks against the unmet target.
+  if (candidates.length === 0) {
+    for (const subject of input.subjects) {
+      if (!subject.weeklyTargetMinutes) continue
+      const remaining = Math.max(0, subject.weeklyTargetMinutes - subject.studiedWeekMinutes)
+      if (remaining < MIN_FRAGMENT_MINUTES) continue
+      const task: SchedulerTask = {
+        id: '',
+        subjectId: subject.id,
+        title: `Study ${subject.name}`,
+        priority: subject.priority,
+        dueAt: null,
+        estimatedMinutes: remaining,
+        completedMinutes: 0,
+      }
+      const candidate: Candidate = { task, subject, remaining, score: 0, deadline: null, synthetic: true }
+      candidate.score = scoreFor(candidate, input, horizonEnd)
+      candidates.push(candidate)
+    }
   }
 
   const requestedMinutes = candidates.reduce((sum, c) => sum + c.remaining, 0)
@@ -326,9 +350,9 @@ export function buildSchedule(input: SchedulerInput): SchedulerResult {
         const startsAt = cursor
         const endsAt = startsAt + length * 60_000
         sessions.push({
-          key: `${chosen.task.id}:${startsAt}`,
+          key: `${chosen.task.id || chosen.subject.id}:${startsAt}`,
           subjectId: chosen.subject.id,
-          taskId: chosen.task.id,
+          taskId: chosen.synthetic ? null : chosen.task.id,
           title: chosen.task.title,
           startsAt,
           endsAt,
@@ -351,7 +375,7 @@ export function buildSchedule(input: SchedulerInput): SchedulerResult {
   const unscheduled = candidates
     .filter((c) => c.remaining >= MIN_FRAGMENT_MINUTES)
     .sort((a, b) => b.score - a.score)
-    .map((c) => ({ taskId: c.task.id, title: c.task.title, subjectName: c.subject.name, minutes: c.remaining }))
+    .map((c) => ({ taskId: c.synthetic ? '' : c.task.id, title: c.task.title, subjectName: c.subject.name, minutes: c.remaining }))
   const unscheduledMinutes = unscheduled.reduce((sum, u) => sum + u.minutes, 0)
 
   const allocationMap = new Map<string, number>()
@@ -375,8 +399,12 @@ export function buildSchedule(input: SchedulerInput): SchedulerResult {
     if (dailyCap < 360) suggestions.push('Raise your maximum daily study time if your week allows it.')
   }
   if (sessions.length === 0) {
-    warnings.push('No study sessions could be created. Add availability windows and at least one open task.')
-    suggestions.push('Open Settings to set your weekly availability.')
+    if (requestedMinutes > 0) {
+      warnings.push('No study sessions could be placed inside your availability windows.')
+      suggestions.push('Open Settings to widen your weekly availability.')
+    } else {
+      warnings.push('There is nothing to schedule yet. Add a task, or set a weekly target on a subject.')
+    }
   }
   if (availableMinutes < 60 && sessions.length > 0) suggestions.push('Your week has less than an hour of open capacity — small, regular sessions work better than one long one.')
 

@@ -12,7 +12,7 @@ import { loadAvailability, slotProblem } from '../lib/availability'
 import { ensureProfile, loadAssessments, loadSessions, loadTasks, expireSessions } from '../lib/rows'
 import { loadSubjects, subjectDirectory, subjectSource } from '../lib/subjects'
 import { aiInputFrom, generateRecommendations } from '../lib/ai'
-import { buildSchedule, capacityByDate, validateSchedule } from '../lib/scheduler'
+import { MIN_FRAGMENT_MINUTES, buildSchedule, capacityByDate, validateSchedule } from '../lib/scheduler'
 import type { SchedulerInput } from '../lib/scheduler'
 import type { PlanProposal, ProposedSession } from '../../shared/types'
 
@@ -220,11 +220,20 @@ const generateHandler = async (c: Context<AppContext>) => {
 
   const context = await gather(c, parsed)
   const { input } = context
-  if (input.subjects.length === 0 && input.tasks.length === 0) {
+  if (input.subjects.length === 0) {
     return reply(c, {
       proposal: null,
       reason: 'no_work',
-      message: 'Add a subject and at least one task before generating a plan.',
+      message: 'Add a subject before generating a plan.',
+    })
+  }
+  // Without tasks, unmet weekly targets are the work the scheduler plans.
+  const hasTargetWork = input.subjects.some((s) => (s.weeklyTargetMinutes ?? 0) - s.studiedWeekMinutes >= MIN_FRAGMENT_MINUTES)
+  if (input.tasks.length === 0 && !hasTargetWork) {
+    return reply(c, {
+      proposal: null,
+      reason: 'no_work',
+      message: 'Nothing to schedule yet. Add a task, or set a weekly target on a subject, then generate again.',
     })
   }
 
@@ -280,7 +289,7 @@ const generateHandler = async (c: Context<AppContext>) => {
   const fallbackSummary = sessionCount
     ? `Planned ${sessionCount} ${sessionCount === 1 ? 'session' : 'sessions'} across ${uniqueSubjects} ${uniqueSubjects === 1 ? 'subject' : 'subjects'}.`
     : 'No sessions could be placed with the current availability.'
-  const explanationText = `${scheduled.complete ? `Every open task fits into your available time. ${summary || fallbackSummary}` : `${summary || fallbackSummary} ${scheduled.totals.unscheduledMinutes} minutes of work could not be placed.`} ${explanation}`
+  const explanationText = `${scheduled.complete ? `${summary || fallbackSummary} Everything fits into your available time.` : `${summary || fallbackSummary} ${scheduled.totals.unscheduledMinutes} minutes of work could not be placed.`} ${explanation}`
 
   const payload: PlanPayload = {
     sessions: checked.valid,

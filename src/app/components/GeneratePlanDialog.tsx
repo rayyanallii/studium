@@ -51,7 +51,7 @@ export function GeneratePlanDialog({ open, onClose, replan = false }: { open: bo
         useAi: options.useAi,
       })
       if (!result.proposal) {
-        setError(result.message ?? 'There is nothing to plan yet. Add a subject and some open tasks first.')
+        setError(result.message ?? 'Nothing to schedule yet. Add a task, or set a weekly target on a subject.')
         return
       }
       setProposal(result.proposal)
