@@ -6,6 +6,12 @@ import type { AppContext } from './env'
 // tables are created on the first request of each isolate. Statements are
 // idempotent; append new ones at the end when the model grows.
 const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS notebook_notes (
+    id TEXT PRIMARY KEY, artifact_id TEXT NOT NULL, owner_sub TEXT NOT NULL,
+    title TEXT NOT NULL, body TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS notebook_notes_owner ON notebook_notes(owner_sub, artifact_id, updated_at)`,
   `CREATE TABLE IF NOT EXISTS assistant_messages (
     id TEXT PRIMARY KEY, owner_sub TEXT NOT NULL, role TEXT NOT NULL,
     content TEXT NOT NULL, created_at INTEGER NOT NULL

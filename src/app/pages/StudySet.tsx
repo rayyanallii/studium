@@ -1,12 +1,12 @@
-import { lazy, Suspense, useState } from 'react'
-const NotebookMap = lazy(() => import('../components/NotebookMap').then(module => ({ default: module.NotebookMap })))
+import { useState } from 'react'
+import { NotebookWorkspace } from '../components/NotebookWorkspace'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Download, FileText, RotateCcw, Send } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Download, FileText, RotateCcw } from 'lucide-react'
 import { Choice } from '../components/fields'
 import { cx } from '../lib/cx'
-import { Alert, Badge, Button, Card, Dialog, Input, PageHeader, Progress, Skeleton, useToast } from '../components/ui'
+import { Alert, Badge, Button, Card, Dialog, PageHeader, Progress, Skeleton, useToast } from '../components/ui'
 import { STUDY_TOOLS } from '../components/StudyTools'
-import { downloadMaterial, useAskNotebook, useAttemptQuiz, useReviewCard, useStudyDetail } from '../lib/study-api'
+import { downloadMaterial, useAttemptQuiz, useReviewCard, useStudyDetail } from '../lib/study-api'
 import type { Citation, QuizAttempt, StudyDetail, StudyMaterial } from '../../shared/study'
 
 export function StudySet() {
@@ -20,14 +20,13 @@ export function StudySet() {
   return <div className="space-y-6">
     <Link to={tool.route} className="inline-flex items-center gap-2 text-[14px] text-muted hover:text-fg"><ArrowLeft className="size-3.5" />{tool.title}</Link>
     <PageHeader title={item.title} subtitle={`${tool.title} · Built from ${item.sources.length} ${item.sources.length === 1 ? 'source' : 'sources'}`} />
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+    {item.kind === 'notebook' ? <NotebookWorkspace key={id} item={item} cite={cite} onOpenSource={setSource} /> : <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0">
         {item.kind === 'flashcards' && <FlashcardStudy key={id} item={item} cite={cite} />}
         {item.kind === 'quiz' && <QuizStudy key={id} item={item} cite={cite} />}
-        {item.kind === 'notebook' && <NotebookStudy key={id} item={item} cite={cite} />}
       </div>
       <aside className="space-y-4 xl:sticky xl:top-24"><Card className="flex flex-col gap-3 border border-line p-5 shadow-none"><h2 className="text-[14px] font-semibold">Your sources</h2><p className="text-[14px] leading-relaxed text-muted">Everything in this set starts here. Open a source to check the original text.</p><div className="divide-y divide-line">{item.sources.map(source => <button key={source.id} onClick={() => setSource(source)} className="flex w-full items-start gap-3 py-4 text-left"><FileText className="mt-0.5 size-4 shrink-0 text-accent" /><span className="min-w-0"><span className="block text-[15px] font-medium">{source.title}</span><span className="mt-1 block text-[11px] text-muted">{source.fileName || 'Pasted notes'}</span></span></button>)}</div></Card><p className="px-1 text-[11px] leading-relaxed text-faint">AI can make mistakes. Citations match the uploaded text; check that the explanation follows from them.</p></aside>
-    </div>
+    </div>}
     <Dialog open={Boolean(source)} onClose={() => setSource(null)} title={source?.title ?? 'Source'} width={760} footer={source?.fileName && <Button onClick={() => { void downloadMaterial(source).catch(error => toast(error.message, 'danger')) }}><Download />Download original</Button>}><pre className="whitespace-pre-wrap font-sans text-[15px] leading-7">{source?.text}</pre></Dialog>
   </div>
 }
@@ -61,22 +60,6 @@ function QuizStudy({ item, cite }: StudyProps) {
     {!result && <div className="flex justify-end"><Button variant="primary" disabled={answered !== questions.length} loading={attempt.isPending} onClick={submit}>Check my answers<ArrowRight /></Button></div>}
     {attempt.error && <Alert tone="danger">{attempt.error.message}</Alert>}
     {item.attempts.length > 0 && <p className="text-[14px] text-muted">Last saved attempt: {item.attempts[0].score}/{item.attempts[0].total}. {item.attempts.length} recent {item.attempts.length === 1 ? 'attempt' : 'attempts'} saved.</p>}
-  </div>
-}
-
-function NotebookStudy({ item, cite }: StudyProps) {
-  const [mapOpen, setMapOpen] = useState(false)
-  const [question, setQuestion] = useState(''), ask = useAskNotebook(item.id)
-  const submit = async () => { if (!question.trim()) return; try { await ask.mutateAsync(question.trim()); setQuestion('') } catch { /* visible below */ } }
-  return <div className="space-y-6">
-    <div className="flex flex-wrap gap-2"><Button onClick={() => setMapOpen(value => !value)}>{mapOpen ? 'Hide mind map' : 'Generate mind map'}</Button>{['Summarize the key topics', 'Turn the main ideas into bullet points', 'Explain the hardest concept step by step', 'Add definitions, examples and subtopics from all sources'].map(prompt => <Button key={prompt} size="sm" disabled={ask.isPending} onClick={() => setQuestion(prompt)}>{prompt}</Button>)}</div>
-    {mapOpen && <Suspense fallback={<Skeleton className="h-[480px]" />}><NotebookMap title={item.title} sections={item.content.sections ?? []} /></Suspense>}
-    <nav aria-label="Notebook topics" className="flex flex-wrap gap-2">{item.content.sections?.map((section, index) => <a key={index} href={`#concept-${index}`} className="rounded-control border border-line px-3 py-2 text-sm hover:bg-surface-2">{section.heading}</a>)}</nav>
-    <Card className="flex flex-col gap-6 border border-line p-6 shadow-none sm:p-8"><div className="flex items-center gap-2 text-[14px] text-muted"><BookOpen className="size-4" />Source guide</div>{item.content.sections?.map((section, index) => <section key={index} id={`concept-${index}`} className="scroll-mt-24 space-y-3"><h2 className="text-[18px] font-semibold tracking-tight">{section.heading}</h2><p className="whitespace-pre-wrap text-[14px] leading-7 text-muted">{section.body}</p>{cite(section)}</section>)}</Card>
-    <div className="flex items-center justify-between"><h2 className="text-[17px] font-semibold">Explore your sources</h2><Badge>{item.messages.length} questions</Badge></div>
-    {item.messages.length === 0 && <div className="rounded-card p-5 text-[15px] leading-relaxed" style={{ background: 'var(--study-peach)', color: 'var(--study-peach-ink)' }}>Ask for an explanation, compare two ideas, or find a detail in your material. Answers stay grounded in the sources attached to this notebook.</div>}
-    <div className="space-y-5" aria-live="polite">{item.messages.map(message => <div key={message.id} className="space-y-3"><div className="ml-8 rounded-card bg-surface-2 px-5 py-4 text-[14px]">{message.question}</div><Card className="flex flex-col gap-3 border border-line p-5 shadow-none"><p className="whitespace-pre-wrap text-[14px] leading-7">{message.answer}</p>{message.citations.map(cite)}</Card></div>)}</div>
-    <form onSubmit={event => { event.preventDefault(); void submit() }} className="rounded-card border border-line-strong bg-panel p-3 shadow-pop"><div className="flex items-center gap-2"><Input aria-label="Ask your notebook" placeholder="What would you like to understand?" value={question} onChange={event => setQuestion(event.target.value)} maxLength={1500} disabled={ask.isPending} className="min-w-0 flex-1 border-0 bg-transparent shadow-none" /><Button type="submit" variant="primary" size="icon" aria-label="Send question" loading={ask.isPending} disabled={question.trim().length < 3}><Send /></Button></div>{ask.isPending && <Skeleton className="my-3 h-24" />}{ask.isPending && <p role="status" className="px-3 pt-2 text-[14px] text-muted">Finding an answer in your sources…</p>}{ask.error && <div className="pt-3"><Alert tone="danger">{ask.error.message}</Alert></div>}</form>
   </div>
 }
 

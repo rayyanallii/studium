@@ -17,6 +17,7 @@ import { subjects, topics } from './routes/subjects'
 import { tasks } from './routes/tasks'
 import { study } from './routes/study'
 import { assistant } from './routes/assistant'
+import { notebookNotes } from './routes/notebook-notes'
 
 const app = new Hono<AppContext>()
 
@@ -44,6 +45,7 @@ api.route('/plans', plans)
 api.route('/sessions', sessions)
 api.route('/focus', focus)
 api.route('/assistant', assistant)
+api.route('/notebooks', notebookNotes)
 app.route('/api', api)
 
 app.onError((error, c) => {

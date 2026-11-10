@@ -202,6 +202,6 @@ study.post('/artifacts/:id/ask', async c => {
 
 study.delete('/artifacts/:id', async c => {
   const db = c.get('db'), owner = c.get('user').sub, artifactId = c.req.param('id')
-  await db.batch(['flashcard_reviews', 'notebook_messages', 'quiz_attempts'].map(table => db.prepare(`DELETE FROM ${table} WHERE artifact_id = ? AND owner_sub = ?`).bind(artifactId, owner)).concat(db.prepare('DELETE FROM study_artifacts WHERE id = ? AND owner_sub = ?').bind(artifactId, owner)))
+  await db.batch(['flashcard_reviews', 'notebook_messages', 'quiz_attempts', 'notebook_notes'].map(table => db.prepare(`DELETE FROM ${table} WHERE artifact_id = ? AND owner_sub = ?`).bind(artifactId, owner)).concat(db.prepare('DELETE FROM study_artifacts WHERE id = ? AND owner_sub = ?').bind(artifactId, owner)))
   return reply(c, { deleted: true })
 })

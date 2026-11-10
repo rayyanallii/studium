@@ -297,6 +297,7 @@ profile.delete('/account', async (c) => {
     ...['flashcard_reviews', 'notebook_messages', 'quiz_attempts', 'study_artifacts', 'study_materials'].map((table) => db.prepare(`DELETE FROM ${table} WHERE owner_sub = ?`).bind(user.sub)),
     db.prepare('DELETE FROM focus_runs WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM assistant_actions WHERE owner_sub = ?').bind(user.sub),
+    db.prepare('DELETE FROM notebook_notes WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM assistant_messages WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM study_sessions WHERE owner_sub = ?').bind(user.sub),
     db.prepare('DELETE FROM study_plans WHERE owner_sub = ?').bind(user.sub),
