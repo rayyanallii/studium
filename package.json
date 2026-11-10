@@ -24,6 +24,7 @@
     "animejs": "^4.5.0",
     "frosted-ui": "^0.0.1-canary.162",
     "hono": "^4.13.0",
+    "katex": "^0.19.1",
     "lucide-react": "^1.60.0",
     "luxon": "^3.7.2",
     "mammoth": "^1.13.0",

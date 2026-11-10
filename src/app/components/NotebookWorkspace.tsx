@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react'
+import { StudyMath } from './StudyMath'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, FileText, MessageCircle, Network, Plus, Save, Send, StickyNote, Trash2 } from 'lucide-react'
 import type { Citation, StudyDetail, StudyMaterial } from '../../shared/study'
@@ -7,16 +8,17 @@ import { useAskNotebook } from '../lib/study-api'
 import { Alert, Button, ConfirmDialog, Dialog, Input, Select, Skeleton, Textarea, useToast } from './ui'
 
 const NotebookMap = lazy(() => import('./NotebookMap').then(module => ({ default: module.NotebookMap })))
+const NotebookFigures = lazy(() => import('./NotebookFigures').then(module => ({ default: module.NotebookFigures })))
 interface Note { id: string; title: string; body: string; version: number }
 
 function InlineText({ text }: { text: string }) {
-  return <>{text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index} className="font-semibold text-fg">{part.slice(2, -2)}</strong> : part)}</>
+  return <StudyMath text={text} />
 }
 
 /** Render source-grounded prose without accepting HTML from generated text. */
 export function NotebookText({ text }: { text: string }) {
   const labels = /^(Definition|Why it matters|Subtopics|Explanation|Worked examples?|Examples?|Connections|Common misconceptions|Recall questions|Key points|Summary|Overview|Important note)\s*:?\s*(.*)$/i
-  return <div className="space-y-3 text-[15px] leading-7 text-muted">{text.split('\n').filter(line => line.trim()).map((line, index) => {
+  return <div className="min-w-0 break-words space-y-3 text-[15px] leading-7 text-muted">{text.replace(/(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\])/g, block => block.replace(/\n/g, ' ')).split('\n').filter(line => line.trim()).map((line, index) => {
     const clean = line.trim()
     const label = clean.replace(/\*\*/g, '').match(labels)
     if (label) return <div key={index} className="pt-2"><h3 className="mb-1 font-semibold text-fg">{label[1]}</h3>{label[2] && <p><InlineText text={label[2]} /></p>}</div>
@@ -37,6 +39,8 @@ export function NotebookWorkspace({ item, cite, onOpenSource }: { item: StudyDet
   const [discardOpen, setDiscardOpen] = useState(false)
   const [deleting, setDeleting] = useState<Note | null>(null)
   const content = useRef<HTMLDivElement>(null)
+  const [split, setSplit] = useState(() => { try { return Math.max(35, Math.min(70, Number(localStorage.getItem('studium-notebook-split')) || 65)) } catch { return 65 } })
+  const resize = (value: number) => { const next = Math.max(35, Math.min(70, value)); setSplit(next); try { localStorage.setItem('studium-notebook-split', String(next)) } catch { /* Layout still works without storage. */ } }
   const chatEnd = useRef<HTMLDivElement>(null)
   const chatInput = useRef<HTMLTextAreaElement>(null)
   const toast = useToast(), client = useQueryClient()
@@ -87,7 +91,7 @@ export function NotebookWorkspace({ item, cite, onOpenSource }: { item: StudyDet
     void send(prompt)
   }
 
-  return <div ref={content} className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+  return <div ref={content} style={{ '--notebook-split': `${split}fr`, '--notebook-rest': `${100 - split}fr` } as CSSProperties} className="notebook-columns grid min-w-0 items-start gap-y-4">
     <section className="min-w-0 overflow-hidden rounded-[20px] border border-line bg-panel">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
         <h2 className="flex items-center gap-2 font-semibold"><BookOpen className="size-4" />Study guide</h2>
@@ -97,13 +101,14 @@ export function NotebookWorkspace({ item, cite, onOpenSource }: { item: StudyDet
       <div className="border-b border-line p-4"><label htmlFor={`topic-${item.id}`} className="mb-2 block text-xs font-medium text-faint">CONTENTS · {sections.length} TOPICS</label><Select id={`topic-${item.id}`} aria-label="Study topic" value={topic} onValueChange={value => setTopic(Number(value))}>{sections.map((entry, index) => <option key={index} value={index}>{entry.heading}</option>)}</Select></div>
       {section && <article className="group p-5 sm:p-7">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><h2 className="min-w-0 flex-1 text-xl font-semibold leading-8">{section.heading}</h2><Button size="sm" variant="ghost" className="shrink-0 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" disabled={ask.isPending} onClick={define}>Define concept</Button></div>
-        <NotebookText text={section.body} />
+        <Suspense fallback={<NotebookText text={section.body} />}><NotebookFigures id={item.id} topic={topic} section={section} sources={item.sources}><NotebookText text={section.body} /></NotebookFigures></Suspense>
         <div className="mt-6">{cite(section)}</div>
         <div className="mt-5 flex flex-wrap gap-2"><Button size="sm" variant="ghost" onClick={() => addToNotes(`${section.heading}\n\n${section.body}`)}><Save />Save topic to notes</Button><Button size="sm" variant="ghost" onClick={() => { setPanel('chat'); setQuestion(`Explain ${section.heading} step by step.`); chatInput.current?.focus() }}>Ask about this topic</Button></div>
         <div className="mt-6 flex justify-between border-t border-line pt-4"><Button size="sm" disabled={topic === 0} onClick={() => setTopic(value => value - 1)}>Previous</Button><span className="self-center text-xs text-faint">{topic + 1} of {sections.length}</span><Button size="sm" disabled={topic === sections.length - 1} onClick={() => setTopic(value => value + 1)}>Next topic</Button></div>
       </article>}
     </section>
 
+    <div role="separator" aria-label="Resize study guide and notebook tools" aria-orientation="vertical" aria-valuemin={35} aria-valuemax={70} aria-valuenow={Math.round(split)} tabIndex={0} className="notebook-divider hidden touch-none self-stretch cursor-col-resize items-start justify-center outline-none focus-visible:bg-accent/20" onDoubleClick={() => resize(65)} onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); resize(event.key === 'Home' ? 35 : event.key === 'End' ? 70 : split + (event.key === 'ArrowLeft' ? -2 : 2)) } }} onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId) }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId) && content.current) { const bounds = content.current.getBoundingClientRect(); resize((event.clientX - bounds.left) / bounds.width * 100) } }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }}><span className="sticky top-1/2 mt-32 h-12 w-1 rounded-full bg-line" /></div>
     <aside className="min-w-0 rounded-[20px] border border-line bg-panel xl:sticky xl:top-24">
       <div className="grid grid-cols-2 border-b border-line p-2" role="tablist" aria-label="Notebook tools">{(['chat', 'notes'] as const).map(tab => <button key={tab} role="tab" aria-selected={panel === tab} aria-controls={`notebook-panel-${tab}`} id={`notebook-tab-${tab}`} onClick={() => setPanel(tab)} className={`flex items-center justify-center gap-2 rounded-control px-3 py-3 text-sm font-medium ${panel === tab ? 'bg-raised text-fg' : 'text-muted hover:bg-surface-2'}`}>{tab === 'chat' ? <MessageCircle className="size-4" /> : <StickyNote className="size-4" />}{tab === 'chat' ? 'Notebook chat' : 'My notes'}</button>)}</div>
       <div id={`notebook-panel-${panel}`} role="tabpanel" aria-labelledby={`notebook-tab-${panel}`}>

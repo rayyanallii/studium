@@ -1,4 +1,6 @@
 import { STUDY_LIMITS } from '../../shared/study'
+import { openPdf, pdfText, renderPdfPage } from './pdf-content'
+import { api } from './api'
 
 export async function extractMaterial(file: File, progress: (status: string) => void): Promise<string> {
   if (file.size > STUDY_LIMITS.fileBytes || file.size === 0) throw new Error('Choose a non-empty file of 10 MB or less.')
@@ -7,10 +9,7 @@ export async function extractMaterial(file: File, progress: (status: string) => 
   let text = ''
   if (/\.pdf$/i.test(file.name)) {
     progress('Reading PDF…')
-    const pdfjs = await import('pdfjs-dist')
-    const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
-    pdfjs.GlobalWorkerOptions.workerSrc = worker.default
-    const loading = pdfjs.getDocument({ data: arrayBuffer })
+    const loading = await openPdf(arrayBuffer)
     try {
       const document = await loading.promise
       if (document.numPages > STUDY_LIMITS.pdfPages) throw new Error('Choose a PDF with 50 pages or fewer. Split longer documents into chapters.')
@@ -19,9 +18,18 @@ export async function extractMaterial(file: File, progress: (status: string) => 
         progress(`Reading page ${number} of ${document.numPages}…`)
         const page = await document.getPage(number)
         const content = await page.getTextContent()
-        const pageText = content.items.map(item => 'str' in item ? item.str : '').join(' ').trim()
-        if (!pageText) throw new Error(`Page ${number} has no extractable text. Upload scanned pages as pictures so AI can read them.`)
+        let pageText = pdfText(content.items.filter(item => 'str' in item))
+        if (pageText.length < 20) {
+          progress(`Reading scanned page ${number} with AI…`)
+          const canvas = await renderPdfPage(page)
+          const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Could not read this page.')), 'image/png'))
+          canvas.width = canvas.height = 0
+          const form = new FormData(); form.set('file', blob, 'page.png')
+          const result = await api<{ text: string }>('/study/ocr-page', { method: 'POST', body: form })
+          pageText = result.text || '[No readable text on this page]'
+        }
         pages.push(`[Page ${number}]\n${pageText}`)
+        page.cleanup()
       }
       text = pages.join('\n\n')
     } finally { await loading.destroy() }

@@ -96,6 +96,37 @@ study.get('/materials/:id/file', async c => {
   return c.body(object.body)
 })
 
+study.post('/ocr-page', async c => {
+  if (!aiKey(c.env)) return fail(c, 503, 'ai_unavailable', 'AI is needed to read scanned pages. Configure the server AI key or upload a PDF with selectable text.')
+  const form = await c.req.raw.formData()
+  const file = form.get('file')
+  if (!(file instanceof File) || file.size > 2 * 1024 * 1024 || file.size < 8) return fail(c, 422, 'invalid_page', 'Choose a page image under 2 MB.')
+  const buffer = await file.arrayBuffer(), bytes = new Uint8Array(buffer)
+  if (bytes[0] !== 137 || new TextDecoder().decode(bytes.slice(1, 4)) !== 'PNG') return fail(c, 422, 'invalid_page', 'Page images must be PNG.')
+  const usageId = await reserveAI(c.get('db'), c.get('user').sub, dailyLimit(c.env.STUDY_AI_DAILY_LIMIT))
+  if (!usageId) return fail(c, 429, 'ai_limit', 'Your study AI limit has been reached. Try again tomorrow.')
+  try {
+    const text = await extractImage(c.env, buffer, 'image/png')
+    await exec(c.get('db'), 'UPDATE ai_generation_usage SET status = ? WHERE id = ?', 'completed', usageId)
+    return reply(c, { text: text === 'NO_READABLE_TEXT' ? '' : text })
+  } catch (error) { await exec(c.get('db'), 'UPDATE ai_generation_usage SET status = ? WHERE id = ?', 'failed', usageId); return fail(c, 502, 'ocr_failed', errorMessage(error)) }
+})
+
+const figureSchema = z.object({ sourceId: z.string().uuid(), page: z.number().int().min(1).max(50), rect: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1), z.number().positive().max(1), z.number().positive().max(1)]).refine(([x,y,w,h]) => x+w <= 1.001 && y+h <= 1.001), caption: z.string().max(400) })
+study.patch('/artifacts/:id/figures', async c => {
+  const input = await parseBody(c, z.object({ topic: z.number().int().min(0).max(19), figures: z.array(figureSchema).max(8), previous: z.array(figureSchema).max(8) }))
+  if (isResponse(input)) return input
+  const db = c.get('db'), owner = c.get('user').sub
+  const row = await one<ArtifactRow>(db, "SELECT * FROM study_artifacts WHERE id = ? AND owner_sub = ? AND kind = 'notebook'", c.req.param('id'), owner)
+  if (!row || !artifact(row).content.sections?.[input.topic]) return fail(c, 404, 'not_found', 'Notebook topic not found.')
+  const sources = await sourcesFor(db, owner, artifact(row).sourceIds)
+  if (input.figures.some(figure => !sources?.some(source => source.id === figure.sourceId && source.mime === 'application/pdf'))) return fail(c, 422, 'invalid_source', 'Use a PDF belonging to this notebook.')
+  const path = `$.sections[${input.topic}].figures`
+  const result = await exec(db, 'UPDATE study_artifacts SET content = json_set(content, ?, json(?)) WHERE id = ? AND owner_sub = ? AND COALESCE(json_extract(content, ?), json(\'[]\')) = json(?)', path, JSON.stringify(input.figures), row.id, owner, path, JSON.stringify(input.previous))
+  if (!result.meta.changes) return fail(c, 409, 'figures_changed', 'These diagrams changed in another tab. Refresh before trying again.')
+  return reply(c, { saved: true })
+})
+
 study.delete('/materials/:id', async c => {
   const db = c.get('db'), owner = c.get('user').sub, sourceId = c.req.param('id')
   const row = await one<MaterialRow>(db, 'SELECT * FROM study_materials WHERE id = ? AND owner_sub = ?', sourceId, owner)

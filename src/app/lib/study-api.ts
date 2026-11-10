@@ -21,11 +21,15 @@ export const useReviewCard = (id: string) => useStudyMutation((input: { cardInde
 export const useAttemptQuiz = (id: string) => useStudyMutation((answers: number[]) => api<QuizAttempt>(`/study/artifacts/${id}/attempt`, { method: 'POST', json: { answers } }))
 export const useAskNotebook = (id: string) => useStudyMutation((question: string) => api<NotebookMessage>(`/study/artifacts/${id}/ask`, { method: 'POST', json: { question } }))
 
-export async function downloadMaterial(source: StudyMaterial) {
+export async function fetchMaterialFile(source: StudyMaterial, signal?: AbortSignal) {
   const session = supabase ? (await supabase.auth.getSession()).data.session : null
-  const response = await fetch(`/api/study/materials/${source.id}/file`, { headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} })
+  const response = await fetch(`/api/study/materials/${source.id}/file`, { signal, headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} })
   if (!response.ok) throw new Error('The source file could not be downloaded.')
-  const url = URL.createObjectURL(await response.blob())
+  return response.blob()
+}
+
+export async function downloadMaterial(source: StudyMaterial) {
+  const url = URL.createObjectURL(await fetchMaterialFile(source))
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = source.fileName || source.title; anchor.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

@@ -6,7 +6,8 @@ export interface StudyMaterial {
 export interface Citation { sourceId: string; quote: string }
 export interface Flashcard extends Citation { front: string; back: string }
 export interface QuizQuestion extends Citation { question: string; options: string[]; correctIndex: number; explanation: string }
-export interface NotebookSection extends Citation { heading: string; body: string }
+export interface SourceFigure { sourceId: string; page: number; rect: [number, number, number, number]; caption: string }
+export interface NotebookSection extends Citation { heading: string; body: string; figures?: SourceFigure[] }
 export interface StudyContent { cards?: Flashcard[]; questions?: QuizQuestion[]; sections?: NotebookSection[] }
 export interface StudyArtifact {
   id: string; title: string; kind: StudyKind; sourceIds: string[]; subjectId: string | null;
