@@ -13,6 +13,7 @@ import {
   isValidElement,
   useState,
   type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
   type ReactNode,
 } from 'react'
 
@@ -33,7 +34,7 @@ export function Input({ className, ...rest }: Omit<ComponentPropsWithoutRef<'inp
   return <TextField.Root size="3" className={cx('min-w-0 w-full', className)}><TextField.Input id={fieldId} {...rest} size="3" /></TextField.Root>
 }
 
-export function Textarea({ className, ...rest }: Omit<ComponentPropsWithoutRef<'textarea'>, 'color'>) {
+export function Textarea({ className, ...rest }: Omit<ComponentPropsWithRef<'textarea'>, 'color'>) {
   const fieldId = useFieldId()
   return <TextArea id={fieldId} className={cx(inputClass, 'h-auto min-h-[88px] resize-y py-2 leading-relaxed', className)} {...rest} />
 }

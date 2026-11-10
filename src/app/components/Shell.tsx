@@ -23,6 +23,8 @@ import { cx } from '../lib/cx'
 import { useScrollActivity } from '../lib/useScrollActivity'
 import { AccountMenu } from './AccountMenu'
 import { BrandMark } from './BrandMark'
+import { AssistantChat, AssistantIcon } from './AssistantChat'
+import { useTheme } from './ThemeProvider'
 import { Button, Dialog, Drawer, Input } from './ui'
 
 type NavItem = { to: string; label: string; icon: LucideIcon }
@@ -47,10 +49,14 @@ const MOBILE_PRIMARY = ['/dashboard', '/subjects', '/library', '/planner']
 const MOBILE_MORE = NAV.filter((item) => !MOBILE_PRIMARY.includes(item.to))
 
 export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
+  const { resolved } = useTheme()
   return (
-    <NavLink to="/dashboard" className={cx('inline-flex items-center gap-2.5 text-[16px] font-semibold tracking-tight', className)}>
-      <BrandMark className="size-10 sm:size-11" />
-      {!compact && <span className="text-[26px] font-semibold tracking-[-0.04em]">{BRAND}</span>}
+    <NavLink to="/dashboard" aria-label={BRAND} className={cx('inline-flex items-center gap-2.5 text-[16px] font-semibold tracking-tight', className)}>
+      {compact ? <BrandMark className="size-10 sm:size-11" /> : (
+        <span className="relative flex h-11 w-32 shrink-0 items-center justify-center overflow-hidden sm:w-36">
+          <img src={resolved === 'dark' ? '/brand/studium-wordmark-white.png' : '/brand/studium-wordmark-dark.png'} alt="" className="w-full max-w-none" />
+        </span>
+      )}
     </NavLink>
   )
 }
@@ -61,6 +67,7 @@ export function Shell() {
   const [moreOpen, setMoreOpen] = useState(false)
   const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [assistantOpen, setAssistantOpen] = useState(false)
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(current => !current) } }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler) }, [])
   const isDev = me?.capabilities.auth === 'development'
 
@@ -76,7 +83,7 @@ export function Shell() {
       <header className="sticky top-0 z-30 col-span-2 grid h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-line bg-bg px-4 sm:gap-6 lg:grid-cols-[1fr_minmax(240px,400px)_1fr] lg:px-6">
         <Logo className="justify-self-start max-sm:gap-2 max-sm:[&>span:last-child]:text-[22px]" />
         <button type="button" onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center justify-self-end gap-3 rounded-[14px] bg-surface-2 text-muted sm:h-11 sm:w-full sm:max-w-[400px] sm:justify-start sm:justify-self-center sm:px-4" aria-label="Search workspace"><Search className="size-5 shrink-0" /><span className="hidden sm:inline">Search</span><kbd className="ml-auto hidden rounded-md border border-line-strong px-1.5 py-0.5 text-xs sm:inline">Ctrl K</kbd></button>
-        <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><AccountMenu /></div>
+        <div className="flex items-center justify-self-end gap-2 sm:gap-3"><Button variant="ghost" size="icon" className="max-sm:hidden" aria-label="Start focus session" onClick={() => navigate('/focus')}><Timer /></Button><Button variant="ghost" size="icon" aria-label="Open AI chatbot" title="Studium Assistant" onClick={() => setAssistantOpen(true)}><AssistantIcon /></Button><AccountMenu /></div>
       </header>
       <aside className="sticky top-[72px] hidden h-[calc(100vh-72px)] flex-col border-r border-line bg-bg px-3 py-4 lg:flex">
         <p className="px-4 text-[14px] font-medium text-faint">Personal workspace</p>
@@ -137,6 +144,7 @@ export function Shell() {
       </nav>
 
       {searchOpen && <WorkspaceSearch onClose={() => setSearchOpen(false)} />}
+      <AssistantChat open={assistantOpen} onClose={() => setAssistantOpen(false)} />
       <Drawer open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
         <div className="flex flex-col gap-1 p-3">
           {MOBILE_MORE.map(({ to, label, icon: Icon }) => (
