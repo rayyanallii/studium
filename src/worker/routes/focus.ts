@@ -165,7 +165,7 @@ async function transition(c: Context<AppContext>, action: 'pause' | 'resume' | '
 
   // finish
   const completed = body?.completed ?? true
-  const focused = Math.max(0, Math.floor(body?.actualMinutes ? body.actualMinutes * 60 : current))
+  const focused = Math.max(0, Math.floor(body?.actualMinutes !== undefined ? body.actualMinutes * 60 : current))
   const minutes = Math.floor(focused / 60)
   await exec(
     db,
@@ -216,3 +216,6 @@ focus.post('/:id/finish', async (c) => {
 })
 
 focus.post('/:id/abandon', (c) => transition(c, 'finish', { completed: false }))
+
+// Cancellation discards this run's time without changing planned work.
+focus.post('/:id/cancel', (c) => transition(c, 'finish', { completed: false, actualMinutes: 0, markSessionComplete: false }))

@@ -117,7 +117,7 @@ export function TimeInput({
 
   return (
     <div className={cx('flex min-w-0 items-center gap-2', className)}>
-      <div className="w-[76px] shrink-0">
+      <div className="min-w-0 flex-1">
         <Select value={hour} onValueChange={(next) => onValueChange(`${next}:${minute}`)} disabled={disabled} aria-label={`${label} hour`}>
           {HOURS.map((option) => (
             <option key={option} value={option}>
@@ -129,7 +129,7 @@ export function TimeInput({
       <span aria-hidden className="text-[15px] text-faint">
         :
       </span>
-      <div className="w-[76px] shrink-0">
+      <div className="min-w-0 flex-1">
         <Select value={minute} onValueChange={(next) => onValueChange(`${hour}:${next}`)} disabled={disabled} aria-label={`${label} minutes`}>
           {minutes.map((option) => (
             <option key={option} value={option}>

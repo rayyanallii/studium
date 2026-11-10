@@ -317,7 +317,7 @@ export function useStartFocus() {
 export function useFocusAction() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (input: { id: string; action: 'pause' | 'resume' | 'finish'; completed?: boolean; markSessionComplete?: boolean; actualMinutes?: number }) =>
+    mutationFn: (input: { id: string; action: 'pause' | 'resume' | 'finish' | 'cancel'; completed?: boolean; markSessionComplete?: boolean; actualMinutes?: number }) =>
       api<{ run: FocusRun; session?: StudySession | null; recordedMinutes?: number }>(`/focus/${input.id}/${input.action}`, {
         method: 'POST',
         json: input.action === 'finish' ? { completed: input.completed, markSessionComplete: input.markSessionComplete, actualMinutes: input.actualMinutes } : undefined,

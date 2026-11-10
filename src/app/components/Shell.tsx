@@ -20,6 +20,7 @@ import { useStudyArtifacts } from '../lib/study-api'
 import { useMe } from '../lib/api'
 import { signOut } from '../lib/auth'
 import { cx } from '../lib/cx'
+import { useScrollActivity } from '../lib/useScrollActivity'
 import { AccountMenu } from './AccountMenu'
 import { BrandMark } from './BrandMark'
 import { Button, Dialog, Drawer, Input } from './ui'
@@ -37,10 +38,9 @@ const FOCUS: NavItem = { to: '/focus', label: 'Focus', icon: Timer }
 const ANALYTICS: NavItem = { to: '/analytics', label: 'Analytics', icon: ChartNoAxesColumn }
 
 const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
-  { items: [OVERVIEW] },
+  { items: [OVERVIEW, ANALYTICS] },
   { label: 'Study', items: [SUBJECTS, LIBRARY] },
   { label: 'Plan', items: [PLANNER, TASKS, FOCUS] },
-  { label: 'Progress', items: [ANALYTICS] },
 ]
 const NAV = NAV_GROUPS.flatMap((group) => group.items)
 const MOBILE_PRIMARY = ['/dashboard', '/subjects', '/library', '/planner']
@@ -56,6 +56,7 @@ export function Logo({ className, compact }: { className?: string; compact?: boo
 }
 
 export function Shell() {
+  const scrollActivity = useScrollActivity()
   const { data: me } = useMe()
   const [moreOpen, setMoreOpen] = useState(false)
   const navigate = useNavigate()
@@ -79,7 +80,7 @@ export function Shell() {
       </header>
       <aside className="sticky top-[72px] hidden h-[calc(100vh-72px)] flex-col border-r border-line bg-bg px-3 py-4 lg:flex">
         <p className="px-4 text-[14px] font-medium text-faint">Personal workspace</p>
-        <nav className="mt-2 flex min-h-0 flex-1 flex-col overflow-y-auto pb-2" aria-label="Main">
+        <nav {...scrollActivity} className="scrollbar-auto-hide mt-2 flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 pr-3" aria-label="Main">
           {NAV_GROUPS.map((group, index) => (
             <div key={group.label ?? index} className="flex flex-col gap-1">
               {group.label && <p className="px-4 pb-1 pt-5 text-[13px] font-medium text-faint">{group.label}</p>}

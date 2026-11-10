@@ -7,7 +7,7 @@ import { DateTime } from 'luxon'
 import type { StudySession } from '../../shared/types'
 import { SessionCard } from '../components/SessionCard'
 import { NumberInput } from '../components/fields'
-import { Alert, Badge, Button, Card, Checkbox, EmptyState, PageHeader, Select, Skeleton, useToast } from '../components/ui'
+import { Alert, Badge, Button, Card, Checkbox, Dialog, EmptyState, PageHeader, Select, Skeleton, useToast } from '../components/ui'
 import { useActiveFocus, useFocusAction, useMe, usePlanner, useStartFocus, useSubjects } from '../lib/api'
 import { cx } from '../lib/cx'
 import { minutesLabel, todayKey } from '../lib/format'
@@ -36,6 +36,7 @@ export function Focus() {
   const [minutes, setMinutes] = useState<number>(25)
   const [custom, setCustom] = useState('35')
   const [finishing, setFinishing] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [markComplete, setMarkComplete] = useState(true)
   const [summary, setSummary] = useState<{ minutes: number; session: StudySession | null } | null>(null)
   const [breakUntil, setBreakUntil] = useState<number | null>(null)
@@ -97,6 +98,20 @@ export function Focus() {
         onError: (error) => toast(error.message, 'danger'),
       },
     )
+  }
+
+  const cancel = () => {
+    if (!run) return
+    focusAction.mutate({ id: run.id, action: 'cancel' }, {
+      onSuccess: () => {
+        setFinishing(false)
+        setCancelling(false)
+        setBreakUntil(null)
+        navigate('/focus', { replace: true })
+        toast('Session cancelled. No study time was recorded.')
+      },
+      onError: (error) => toast(error.message, 'danger'),
+    })
   }
 
   if (isLoading) return <Skeleton className="h-[420px] rounded-card" />
@@ -281,15 +296,21 @@ export function Focus() {
       )}
 
       {run && finishing && (
-        <Card className="fixed inset-x-3 bottom-3 z-50 p-5 shadow-dialog sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:w-[430px] sm:-translate-x-1/2 sm:-translate-y-1/2">
-          <h3 className="text-[15px] font-semibold">Finish this session?</h3>
+        <Dialog open width={480} title={cancelling ? 'Cancel this session?' : 'Finish this session?'} onClose={() => { if (!focusAction.isPending) { setFinishing(false); setCancelling(false) } }}>
+          {cancelling ? <>
+            <p className="text-[15px] leading-6 text-muted">This session’s focused time will be discarded. Your planned session and task progress will stay unchanged.</p>
+            <div className="mt-5 flex flex-wrap justify-end gap-3">
+              <Button disabled={focusAction.isPending} onClick={() => setCancelling(false)}>Go back</Button>
+              <Button variant="danger" loading={focusAction.isPending} onClick={cancel}>Cancel session</Button>
+            </div>
+          </> : <>
           <p className="mt-1 text-[15px] text-muted">
             You have focused for <span className="font-medium text-fg">{minutesLabel(Math.floor(elapsed / 60))}</span>. Only confirmed time is added to your analytics.
           </p>
-          <label className="mt-4 flex items-start gap-2.5 rounded-tile bg-surface-2 p-3">
+          {run.studySessionId && <label className="mt-4 flex items-start gap-2.5 rounded-tile bg-surface-2 p-3">
             <Checkbox checked={markComplete} onChange={setMarkComplete} className="mt-0.5" />
             <span className="text-[14px] leading-relaxed">Mark the planned study session as completed too.</span>
-          </label>
+          </label>}
           <div className="mt-4 flex flex-col gap-2">
             <Button variant="primary" className="h-10" onClick={() => finish(true)} loading={focusAction.isPending} disabled={Math.floor(elapsed / 60) === 0}>
               Confirm completion
@@ -297,11 +318,13 @@ export function Focus() {
             <Button className="h-10" onClick={() => finish(false)} loading={focusAction.isPending} disabled={Math.floor(elapsed / 60) === 0}>
               Record partial progress
             </Button>
-            <Button variant="ghost" className="h-9" onClick={() => setFinishing(false)}>
+            <Button variant="ghost" className="h-10" disabled={focusAction.isPending} onClick={() => setFinishing(false)}>
               Keep studying
             </Button>
+            <Button variant="ghost" className="h-10 text-danger" disabled={focusAction.isPending} onClick={() => setCancelling(true)}>Cancel session</Button>
           </div>
-        </Card>
+          </>}
+        </Dialog>
       )}
     </div>
   )

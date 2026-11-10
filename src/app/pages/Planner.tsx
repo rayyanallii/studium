@@ -312,7 +312,7 @@ function NewSessionDialog({ onClose, timezone, defaultDate, onSaved }: { onClose
       onClose={onClose}
       title="Add a study session"
       description="Manual sessions stay locked, so future replans leave them alone."
-      width={480}
+      width={540}
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
@@ -322,7 +322,7 @@ function NewSessionDialog({ onClose, timezone, defaultDate, onSaved }: { onClose
         </>
       }
     >
-      <div className="grid gap-3">
+      <div className="grid gap-4">
         <Field label="What are you studying?">
           <FieldInput value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Practice past papers" autoFocus />
         </Field>
@@ -336,8 +336,8 @@ function NewSessionDialog({ onClose, timezone, defaultDate, onSaved }: { onClose
             ))}
           </Select>
         </Field>
-        <div className="grid grid-cols-3 gap-2">
-          <Field label="Date">
+        <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
+          <Field label="Date" className="min-[420px]:col-span-2">
             <DateInput value={form.date} onValueChange={(value) => setForm({ ...form, date: value })} />
           </Field>
           <Field label="Start">
