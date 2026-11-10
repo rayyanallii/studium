@@ -63,15 +63,11 @@ export function ThemeProvider({ preference, onChange, children }: { preference: 
     [theme, resolved, onChange],
   )
 
-  // Frosted UI ships its own font tokens; point them at Inter so component text
-  // never falls back to the system stack.
+  // Typography is defined for all Frosted theme boundaries in styles.css,
+  // including the separate theme elements created by portals.
   const frostStyle = {
     minHeight: '100vh',
     background: 'var(--color-bg)',
-    fontFamily: 'var(--font-sans)',
-    '--default-font-family': 'var(--font-sans)',
-    '--heading-font-family': 'var(--font-sans)',
-    '--strong-font-family': 'var(--font-sans)',
   }
 
   return <ThemeContext.Provider value={value}><FrostTheme appearance="inherit" hasBackground={false} accentColor="blue" grayColor="gray" style={frostStyle}>{children}</FrostTheme></ThemeContext.Provider>

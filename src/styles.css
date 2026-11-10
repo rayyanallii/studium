@@ -1,14 +1,14 @@
 @import 'tailwindcss';
 @import 'frosted-ui/styles.css' layer(components);
 @import '@fontsource-variable/inter';
-@import '@fontsource/instrument-serif';
 
 @theme {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-serif: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   --color-bg: #ffffff;
   --color-panel: #ffffff;
+  --color-dialog: #ffffff;
   --color-muted: #686868;
   --color-accent: #1d5ce5;
   --color-success: #23834e;
@@ -46,10 +46,26 @@
   --shadow-float: 0 18px 50px -24px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(23 25 35 / 0.05);
 }
 
+/* Portals mount their own Frosted theme, outside the app's theme element.
+   Set the typography on every theme boundary, not just the document root. */
+:root, .frosted-ui {
+  --default-font-family: var(--font-sans);
+  --heading-font-family: var(--font-sans);
+  --strong-font-family: var(--font-sans);
+  --em-font-family: var(--font-sans);
+  --quote-font-family: var(--font-sans);
+  --code-font-family: var(--font-sans);
+  --em-font-size-adjust: 1;
+  --quote-font-size-adjust: 1;
+  --default-letter-spacing: -0.011em;
+  --heading-letter-spacing: -0.02em;
+}
+
 /* Dark theme keeps the same token names so every utility keeps working. */
 [data-theme='dark'] {
   --color-bg: #101010;
   --color-panel: #151515;
+  --color-dialog: #191919;
   --color-muted: #ababab;
   --color-accent: #619bff;
   --color-success: #38ce8d;
@@ -189,4 +205,4 @@
 [data-theme="dark"] { --study-lilac: #292234; --study-lilac-ink: #bea3ed; --study-mint: #1d3026; --study-mint-ink: #87cba5; --study-peach: #33291e; --study-peach-ink: #dfb083; --study-blue: #202c40; --study-blue-ink: #9dbdf1; }
 .study-feature { border: 1px solid var(--color-line); background: var(--color-panel); transition: border-color 150ms ease, background 150ms ease; }
 .study-feature:hover { border-color: var(--color-line-strong); background: var(--color-surface-2); }
-.study-dialog { background: var(--color-panel); color: var(--color-fg); border: 1px solid var(--color-line-strong); border-radius: 22px; }
+.study-dialog { background: var(--color-dialog); color: var(--color-fg); border: 1px solid var(--color-line); border-radius: 20px; }

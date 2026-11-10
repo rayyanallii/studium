@@ -190,7 +190,7 @@ export function Dialog({ open, onClose, title, description, children, footer, wi
 }) {
   return <FrostDialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
     <FrostDialog.Content style={{ maxWidth: width, width: 'calc(100vw - 32px)' }} className="study-dialog flex max-h-[calc(100dvh-32px)] flex-col overflow-hidden p-0">
-      <div className="flex items-start justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6"><div className="min-w-0"><FrostDialog.Title className="m-0">{title}</FrostDialog.Title>{description && <FrostDialog.Description className="mb-0 mt-2 text-muted">{description}</FrostDialog.Description>}</div><FrostDialog.Close><Button size="icon-sm" variant="ghost" aria-label="Close"><X /></Button></FrostDialog.Close></div>
+      <div className="flex items-start justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6"><div className="min-w-0"><FrostDialog.Title className="m-0 text-[20px] font-semibold leading-7 tracking-[-0.02em]">{title}</FrostDialog.Title>{description && <FrostDialog.Description className="mb-0 mt-2 text-[15px] leading-6 text-muted">{description}</FrostDialog.Description>}</div><FrostDialog.Close><Button size="icon-sm" variant="ghost" aria-label="Close"><X /></Button></FrostDialog.Close></div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
       {footer && <div className="flex flex-wrap justify-end gap-3 border-t border-line px-5 py-4 sm:px-6">{footer}</div>}
     </FrostDialog.Content>

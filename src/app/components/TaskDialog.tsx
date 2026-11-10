@@ -94,7 +94,7 @@ export function TaskDialog({ open, onClose, task, defaultSubjectId }: { open: bo
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px]">
           <Field label="Priority">
             <Select value={form.priority} onValueChange={(value) => setForm({ ...form, priority: value as typeof form.priority })}>
               {PRIORITIES.map((priority) => (
