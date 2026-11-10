@@ -7,7 +7,7 @@ const citation = { sourceId: z.string(), quote: z.string().min(10).max(600) }
 export const generatedSchemas = {
   flashcards: z.object({ title: z.string().min(1).max(120), cards: z.array(z.object({ front: z.string().min(1).max(500), back: z.string().min(1).max(1500), ...citation })).min(3).max(20) }),
   quiz: z.object({ title: z.string().min(1).max(120), questions: z.array(z.object({ question: z.string().min(1).max(700), options: z.array(z.string().min(1).max(500)).length(4), correctIndex: z.number().int().min(0).max(3), explanation: z.string().min(1).max(1500), ...citation })).min(3).max(15) }),
-  notebook: z.object({ title: z.string().min(1).max(120), sections: z.array(z.object({ heading: z.string().min(1).max(150), body: z.string().min(1).max(2500), ...citation })).min(1).max(8) }),
+  notebook: z.object({ title: z.string().min(1).max(120), sections: z.array(z.object({ heading: z.string().min(1).max(150), body: z.string().min(1).max(6000), ...citation })).min(1).max(20) }),
 }
 export const answerSchema = z.object({ answer: z.string().min(1).max(6000), insufficientEvidence: z.boolean(), citations: z.array(z.object(citation)).max(8) }).refine(value => value.insufficientEvidence || value.citations.length > 0, 'A supported answer needs a citation.')
 
@@ -45,7 +45,7 @@ export async function generateStudy(env: Env, kind: StudyKind, sources: StudyMat
   const formats = {
     flashcards: 'Create 8 concise active-recall flashcards (at least 3 if source is short). Shape: {"title":"...","cards":[{"front":"question","back":"answer","sourceId":"...","quote":"exact source quotation"}]}',
     quiz: 'Create 5 multiple-choice questions (at least 3 if source is short). Each must have four distinct options, exactly one correct answer, and a useful explanation. Shape: {"title":"...","questions":[{"question":"...","options":["...","...","...","..."],"correctIndex":0,"explanation":"...","sourceId":"...","quote":"exact source quotation"}]}',
-    notebook: 'Create a study notebook with 3-5 sections explaining the key ideas, relationships and terminology. Shape: {"title":"...","sections":[{"heading":"...","body":"plain text explanation","sourceId":"...","quote":"exact source quotation"}]}',
+    notebook: 'Create a comprehensive study notebook covering ALL major topics in the supplied materials, up to 20 sections. Each section covers one concept. In body use clearly labeled paragraphs and bullet points for Definition, Why it matters, Subtopics, Explanation, Worked example, Connections, Common misconceptions, and Recall questions. Include only supported details; omit unsupported categories. Label illustrative examples as examples. Preserve equations and explain symbols. Balance coverage across every source. Avoid superficial summaries. Shape: {"title":"...","sections":[{"heading":"...","body":"plain text explanation","sourceId":"...","quote":"exact source quotation"}]}',
   }
   const raw = await askStudyModel(env, [{ role: 'system', content: SOURCE_RULES }, { role: 'user', content: `${formats[kind]}\nSources:\n${JSON.stringify(sources.map(({ id, title, text }) => ({ id, title, text })))}` }])
   const result = generatedSchemas[kind].safeParse(JSON.parse(raw))
@@ -58,7 +58,7 @@ export async function generateStudy(env: Env, kind: StudyKind, sources: StudyMat
 
 export async function answerNotebook(env: Env, sources: StudyMaterial[], question: string, history: { question: string; answer: string }[]) {
   const raw = await askStudyModel(env, [
-    { role: 'system', content: `${SOURCE_RULES} If the sources do not answer the question, explicitly say so and set insufficientEvidence=true. Otherwise include citations. Shape: {"answer":"plain text","insufficientEvidence":false,"citations":[{"sourceId":"...","quote":"..."}]}` },
+    { role: 'system', content: `${SOURCE_RULES} If the sources do not answer the question, explicitly say so and set insufficientEvidence=true. Otherwise include citations. Support requests to summarize selected topics, convert explanations to bullet points, expand subtopics, add source-supported content, explain step by step, and produce hierarchical outlines for mind maps. These are saved conversation additions to the notebook. Use clear section labels, definitions, worked examples and recall questions where appropriate. Shape: {"answer":"plain text","insufficientEvidence":false,"citations":[{"sourceId":"...","quote":"..."}]}` },
     { role: 'user', content: JSON.stringify({ sources: sources.map(({ id, title, text }) => ({ id, title, text })), recentConversation: history.slice(-4), question }) },
   ])
   const result = answerSchema.safeParse(JSON.parse(raw))

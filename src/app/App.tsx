@@ -6,7 +6,7 @@ import { MotionConfig } from 'motion/react'
 import type { Me } from '../shared/types'
 import { BrandMark } from './components/BrandMark'
 import { Shell } from './components/Shell'
-import { Spinner, ToastProvider } from './components/ui'
+import { Skeleton, ToastProvider } from './components/ui'
 import { ThemeProvider } from './components/ThemeProvider'
 import { api, ApiError, useMe } from './lib/api'
 import { useSession } from './lib/auth'
@@ -35,7 +35,7 @@ function Splash() {
     <div className="grid min-h-screen place-items-center bg-bg">
       <div className="flex flex-col items-center gap-3">
         <BrandMark className="size-12" />
-        <Spinner />
+        <div role="status" aria-label="Loading your workspace" className="w-[min(85vw,720px)] space-y-5"><Skeleton className="h-10 w-48" /><div className="grid grid-cols-3 gap-4"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div><Skeleton className="h-56" /></div>
       </div>
     </div>
   )
@@ -106,7 +106,7 @@ function Gate() {
     if (!session) return <PublicRoutes />
   }
 
-  if (me.isLoading) return <Splash />
+  if (me.isPending || (me.isFetching && !me.data)) return <Splash />
   if (me.error instanceof ApiError && me.error.status === 401) {
     if (supabase && session) {
       return (

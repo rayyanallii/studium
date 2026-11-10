@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
+import { useSession } from './auth'
 
 import type {
   ActivePlan,
@@ -71,7 +72,10 @@ function refresh(client: QueryClient, extra: string[] = []) {
 
 /* ---------------------------------------------------------------- account */
 
-export const useMe = () => useQuery({ queryKey: ['me'], queryFn: () => api<Me>('/me'), retry: false, staleTime: 60_000 })
+export const useMe = () => {
+  const { session, loading } = useSession()
+  return useQuery({ queryKey: ['me'], queryFn: () => api<Me>('/me'), enabled: !supabase || (!loading && Boolean(session)), retry: 2, retryDelay: 500, staleTime: 60_000 })
+}
 
 export function useUpdateProfile() {
   const client = useQueryClient()
