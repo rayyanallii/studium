@@ -1,0 +1,77 @@
+.landing-study-section > .studium-section-desc { max-width: 60ch; }
+.landing-source-demo, .landing-workflow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 28px;
+}
+.landing-demo-pane, .landing-start-panel {
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid #302b3b;
+  border-radius: 18px;
+  background: #15131b;
+  color: #f7f5fb;
+}
+.landing-demo-pane h3 { margin: 12px 0 8px; font-size: 20px; line-height: 1.3; }
+.landing-demo-pane p { margin: 0 0 12px; color: #bbb5c9; line-height: 1.6; }
+.landing-demo-pane .landing-demo-label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.landing-demo-paper { background: #eee9f4; color: #251c32; }
+.landing-demo-paper p { color: #483e53; }
+.landing-demo-paper mark { background: #d9c5f3; color: #251c32; }
+.landing-demo-pane details { margin-top: 18px; border-top: 1px solid #302b3b; padding-top: 12px; }
+.landing-demo-pane summary { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #dfccff; min-height: 44px; }
+.landing-demo-pane summary::after { content: '+'; margin-left: auto; }
+.landing-demo-pane details[open] summary::after { content: '−'; }
+.landing-demo-pane blockquote { margin: 8px 0 0; border-left: 2px solid #9576c4; padding-left: 14px; line-height: 1.6; }
+.landing-step-picker { display: grid; gap: 8px; }
+.landing-step-picker button, .landing-flip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid #302b3b;
+  border-radius: 12px;
+  background: #15131b;
+  color: #f7f5fb;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+.landing-step-picker button svg { flex-shrink: 0; color: #cfb6f7; }
+.landing-step-picker button[aria-pressed='true'] { border-color: #ae8ddb; background: #21192c; }
+.landing-step-picker small, .landing-flip-card small { display: block; margin-top: 5px; color: #c4b9d1; line-height: 1.4; }
+.landing-study-section :is(button, a, summary):focus-visible { outline: 2px solid #dfccff; outline-offset: 4px; }
+.landing-workflow-preview { display: flex; flex-direction: column; justify-content: center; }
+.landing-sample-file { display: flex; align-items: center; gap: 16px; border-top: 1px solid #302b3b; padding-top: 8px; }
+.landing-sample-file svg { color: #cfb6f7; flex-shrink: 0; }
+.landing-flip-card { flex-direction: column; width: 100%; min-height: 124px; justify-content: center; background: #21192c; }
+.landing-start-panel { display: flex; gap: 24px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.landing-start-panel .studium-plan-btn { margin: 0; width: auto; }
+.studium-section.landing-faq-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: clamp(24px, 6vw, 84px); }
+.landing-faq-intro p, .landing-faq p { color: #bbb5c9; line-height: 1.65; }
+.landing-faq { border-top: 1px solid #383241; }
+.landing-faq details { border-bottom: 1px solid #383241; }
+.landing-faq summary { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; cursor: pointer; font-weight: 600; }
+.landing-faq summary::after { content: '+'; color: #cfb6f7; flex-shrink: 0; }
+.landing-faq details[open] summary::after { content: '−'; }
+.landing-faq p { max-width: 65ch; padding: 0 24px 18px 0; }
+.studium-landing .landing-faq-section .landing-privacy-link { color: #dfccff; text-decoration: underline; }
+.landing-privacy-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; text-decoration: underline; text-underline-offset: 4px; }
+.landing-footer { background: #181323; border-top: 1px solid #342941; color: #f7f5fb; }
+.landing-footer-main, .landing-footer-bottom { max-width: 1200px; margin-inline: auto; padding-inline: 28px; }
+.landing-footer-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 42px; padding-block: 54px; }
+.landing-footer-brand a { display: inline-flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 650; }
+.landing-footer-brand .landing-footer-logo { width: clamp(180px, 21vw, 260px); max-width: 100%; height: auto; }
+.landing-footer-brand p { margin-top: 14px; max-width: 28ch; color: #c1b7cd; line-height: 1.65; }
+.landing-footer-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.landing-footer-nav > div { display: grid; align-content: start; }
+.landing-footer-nav h2 { margin: 0 0 8px; font-size: 14px; font-weight: 650; }
+.landing-footer-nav a, .landing-footer-bottom a { display: flex; align-items: center; gap: 6px; width: fit-content; min-height: 40px; font-size: 14px; color: #c1b7cd; }
+.landing-footer a:hover { color: white; text-decoration: underline; text-underline-offset: 4px; }
+.landing-footer a:focus-visible { outline: 2px solid #dfccff; outline-offset: 3px; }
+.landing-footer-bottom { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; border-top: 1px solid #342941; padding-block: 12px; }
+.landing-footer-bottom nav { display: flex; flex-wrap: wrap; gap: 20px; }
+@media (max-width: 700px) {
+  .landing-source-demo, .landing-workflow, .studium-section.landing-faq-section, .landing-footer-main { grid-template-columns: minmax(0, 1fr); }
+  .landing-footer-main { gap: 28px; padding-block: 34px; }
+  .landing-footer-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

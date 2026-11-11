@@ -1,0 +1,62 @@
+.study-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.study-feature-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  padding: clamp(18px, 2.2vw, 32px);
+  gap: 16px;
+  border: 1px solid #2d2a35;
+  border-radius: 18px;
+  background: #15131b;
+  color: #f7f5fb;
+  text-decoration: none;
+}
+
+.study-feature-card:hover { border-color: #82729a; }
+.study-feature-card:focus-visible { outline: 2px solid #c6b2f3; outline-offset: 4px; }
+.study-feature-cards {
+  grid-column: span 2;
+  grid-template: 1fr / minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+}
+.study-feature-cards .study-feature-art { grid-column: 2; grid-row: 1; width: min(100%, 276px); }
+.study-feature-cards .study-feature-content { grid-column: 1; grid-row: 1; }
+
+.study-feature-art {
+  width: min(100%, 158px);
+  aspect-ratio: 1;
+  justify-self: center;
+  background-image: url('/images/study-features.png');
+  background-size: 300% 200%;
+  background-position: var(--art-x, 0%) var(--art-y, 0%);
+  mask-image: radial-gradient(ellipse at center, #000 45%, transparent 74%);
+}
+.study-feature-quiz { --art-x: 50%; }
+.study-feature-notebook { --art-x: 100%; }
+.study-feature-planner { --art-y: 100%; }
+.study-feature-focus { --art-x: 50%; --art-y: 100%; }
+
+.study-feature-content { display: flex; flex-direction: column; gap: 8px; }
+.study-feature-content h3 { margin: 0; font-size: clamp(20px, 1.8vw, 26px); font-weight: 600; line-height: 1.2; }
+.study-feature-content p { margin: 0; max-width: 35ch; font-size: 15px; line-height: 1.55; color: #b9b4c3; }
+.study-feature-content span { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; font-size: 14px; font-weight: 600; }
+.study-feature-card:hover .study-feature-content span { text-decoration: underline; text-underline-offset: 4px; }
+
+@media (max-width: 900px) {
+  .study-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .study-feature-grid { grid-template-columns: minmax(0, 1fr); }
+  .study-feature-card, .study-feature-cards {
+    grid-column: auto;
+    grid-template: auto / minmax(0, 1fr) minmax(68px, 28%);
+    align-items: center;
+  }
+  .study-feature-card .study-feature-art { grid-column: 2; grid-row: 1; width: 100%; }
+  .study-feature-card .study-feature-content { grid-column: 1; grid-row: 1; }
+}

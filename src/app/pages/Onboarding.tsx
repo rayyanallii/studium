@@ -147,8 +147,7 @@ export function Onboarding() {
     <div className="min-h-screen bg-bg px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[720px]">
         <div className="flex items-center gap-2.5">
-          <BrandMark className="size-9" />
-          <span className="font-semibold tracking-tight text-[20px]">Studium</span>
+          <BrandMark className="h-12 w-28" />
           <span className="ml-auto text-[14px] text-faint">
             Step {step} of 6
           </span>

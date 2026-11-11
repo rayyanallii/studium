@@ -219,6 +219,8 @@
 .study-feature:hover { border-color: var(--color-line-strong); background: var(--color-surface-2); }
 .study-dialog { background: var(--color-dialog); color: var(--color-fg); border: 1px solid var(--color-line); border-radius: 20px; }
 .notebook-columns { container-type: inline-size; }
+[data-theme='light'] .studium-wordmark { background: #171321; border-radius: 8px; }
+[data-theme='light'] .studium-landing .studium-wordmark { background: transparent; }
 @media (min-width: 1280px) {
   .notebook-columns { grid-template-columns: minmax(300px, var(--notebook-split)) 20px minmax(280px, var(--notebook-rest)); }
   .notebook-divider { display: flex; }

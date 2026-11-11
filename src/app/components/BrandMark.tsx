@@ -1,23 +1,22 @@
 import { cx } from '../lib/cx'
 
-/**
- * The uploaded Studium mark.
- *
- * `public/brand/studium-mark.png` is generated from the source artwork by
- * `scripts/make-brand-assets.py`, which removes only the outer white canvas and
- * keeps the white book pages. The mark therefore sits directly on the app
- * surface in both themes instead of inside a white tile.
- */
-export function BrandMark({ className }: { className?: string }) {
+export function BrandMark({
+  className,
+  alt = 'Studium',
+  src = '/brand/studium-wordmark-white.png',
+}: {
+  className?: string
+  alt?: string
+  src?: string
+}) {
   return (
     <img
-      src="/brand/studium-mark.png"
-      alt=""
-      aria-hidden="true"
-      width={48}
-      height={48}
+      src={src}
+      alt={alt}
+      width={1671}
+      height={941}
       draggable={false}
-      className={cx('shrink-0 select-none object-contain', className)}
+      className={cx('studium-wordmark block shrink-0 select-none object-contain', className)}
     />
   )
 }

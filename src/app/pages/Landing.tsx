@@ -1,237 +1,571 @@
-import { animate, stagger } from 'animejs'
-import { ArrowRight, BarChart, CalendarCheck, Check, Clock, Sparkles, Target, WandSparkles, Layers, NotebookPen, ScanLine, Upload } from 'lucide-react'
-import { motion } from 'motion/react'
-import { BrandMark } from '../components/BrandMark'
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  Menu,
+  Pause,
+  Play,
+  X,
+} from 'lucide-react'
 
-import { TAGLINE } from '../../shared/types'
-import { ThemeToggle } from '../components/ThemeProvider'
+import { BrandMark } from '../components/BrandMark'
+import { DotHands } from '../components/DotHands'
+import { FigureTriptych } from '../components/landing/FigureTriptych'
+import { SessionTimeline } from '../components/landing/SessionTimeline'
+import { BlurText } from '../components/reactbits/BlurText'
+import { ScrollReveal } from '../components/reactbits/ScrollReveal'
+import { StarBorder } from '../components/reactbits/StarBorder'
+import { cx } from '../lib/cx'
+import './landing.css'
+import './study-features.css'
+
+const LINKS = [
+  { label: 'Features', href: '#features' },
+  { label: 'Demo', href: '#demo' },
+  { label: 'How it works', href: '#how' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'FAQ', href: '#questions' },
+]
 
 const FEATURES = [
-  { icon: Layers, title: 'AI flashcards', detail: 'Turn your course material into active-recall cards, reveal the answers, and keep track of what you have learned.' },
-  { icon: ScanLine, title: 'AI quizzes', detail: 'Check your understanding with questions from your sources, scored attempts, and explanations you can verify.' },
-  { icon: NotebookPen, title: 'AI notebooks', detail: 'Explore summaries and ask questions grounded in your own sources, with quotations linked to the original text.' },
-  { icon: Upload, title: 'One study library', detail: 'Bring PDFs, Word documents, pictures and pasted notes together. Reuse a source across all your study tools.' },
-  { icon: WandSparkles, title: 'AI-assisted planning', detail: 'Studium reads your subjects, deadlines and difficulty ratings, then recommends what deserves the next hour.' },
-  { icon: CalendarCheck, title: 'Adaptive scheduling', detail: 'Skip a session or add an exam and the plan is recalculated around the work that is left, never over your history.' },
-  { icon: Target, title: 'Deadlines that matter', detail: 'Assessments and due dates pull work forward automatically, so urgent tasks finish before they are due.' },
-  { icon: Clock, title: 'Focus sessions', detail: 'A timer that survives refreshes and background tabs, and records only the minutes you actually study.' },
-  { icon: BarChart, title: 'Honest analytics', detail: 'Planned versus actual minutes, completion rate and subject balance, all computed from your real sessions.' },
+  {
+    title: 'AI flashcards',
+    copy: 'Turn your course material into active-recall cards, reveal the answers, and keep track of what you have learned.',
+    art: '',
+  },
+  {
+    title: 'AI quizzes',
+    copy: 'Check your understanding with questions from your sources, scored attempts, and explanations you can verify.',
+    art: 'study-feature-quiz',
+  },
+  {
+    title: 'AI notebooks',
+    copy: 'Explore summaries and ask questions grounded in your own sources, with quotations linked to the original text.',
+    art: 'study-feature-notebook',
+  },
+  {
+    title: 'AI-assisted planning',
+    copy: 'Studium reads your subjects, deadlines and difficulty ratings, then recommends what deserves the next hour.',
+    art: 'study-feature-planner',
+  },
+  {
+    title: 'Focus sessions',
+    copy: 'A timer that survives refreshes and background tabs, and records only the minutes you actually study.',
+    art: 'study-feature-focus',
+  },
 ]
 
-const STEPS = [
-  { title: 'Add your subjects', detail: 'Colour, priority and difficulty — plus the topics and tasks you actually have to get through.' },
-  { title: 'Tell Studium when you are free', detail: 'Weekly windows, session length, breaks and a daily ceiling. Real life included.' },
-  { title: 'Generate and start studying', detail: 'Review the proposed week, accept it, and start your first focus session.' },
+const FAQS: [string, string][] = [
+  [
+    'What can I upload?',
+    'PDFs, Word documents (.docx), PNG, JPEG and WebP images, or pasted notes. Files can be up to 10 MB, and PDFs can run to 50 pages.',
+  ],
+  [
+    'Can I make cards for just one chapter?',
+    'Yes. Select your sources, choose between 3 and 20 cards, and name the chapter or topic you want to review. The material for that chapter becomes the only source.',
+  ],
+  [
+    'Can I see what the AI used to answer?',
+    'Every notebook answer carries citations. Open one to compare the explanation with the excerpt from your selected source — and check the original when accuracy matters.',
+  ],
+  [
+    'Can I use the planner on its own?',
+    'Yes. Add a session yourself, move it on the calendar when the week changes, and use the focus timer to record the time you actually studied.',
+  ],
+  [
+    'What happens to my uploaded material?',
+    'Your sources stay in your workspace. AI requests can send relevant source content to the configured provider. You can remove saved material or delete your study data from Settings.',
+  ],
+  [
+    'Can I delete a source I have already used?',
+    'Yes. Delete any study sets that cite the source first, then remove it from your library. Settings has a single action for removing all study data.',
+  ],
 ]
 
-export function Landing() {
-  const bars = useRef<HTMLDivElement>(null)
+function Nav() {
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const target = bars.current
-    if (!target) return
-    const animation = animate(target.querySelectorAll('[data-bar]'), {
-      opacity: [0, 1],
-      translateY: [14, 0],
-      delay: stagger(55),
-      duration: 700,
-      ease: 'out(3)',
-    })
+    const onScroll = () => setScrolled(window.scrollY > 16)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
-      animation.pause()
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previous
+    }
+  }, [open])
+
+  return (
+    <header className={cx('lp-nav', scrolled && 'is-scrolled')}>
+      <div className="lp-nav-inner">
+        <Link to="/" className="lp-brand" aria-label="Studium home">
+          <BrandMark src="/brand/studium-wordmark-tight.png" className="lp-brand-mark" />
+        </Link>
+
+        <nav className="lp-nav-links" aria-label="Main navigation">
+          {LINKS.map((link) => (
+            <a key={link.href} href={link.href} className="lp-nav-link">
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="lp-nav-actions">
+          <Link to="/login" className="lp-nav-signin">
+            Sign in
+          </Link>
+          <Link to="/signup" className="lp-nav-cta">
+            Start studying
+            <ArrowRight size={13} aria-hidden="true" />
+          </Link>
+          <button
+            type="button"
+            className="lp-nav-burger"
+            aria-label="Open menu"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+          >
+            <Menu size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="lp-menu" role="dialog" aria-modal="true" aria-label="Site menu">
+          <div className="lp-menu-panel">
+            <div className="lp-menu-top">
+              <Link to="/" className="lp-brand" onClick={() => setOpen(false)}>
+                <BrandMark src="/brand/studium-wordmark-tight.png" className="lp-brand-mark" />
+              </Link>
+              <button type="button" className="lp-nav-burger" aria-label="Close menu" onClick={() => setOpen(false)}>
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <nav className="lp-menu-links" aria-label="Sections">
+              {LINKS.map((link) => (
+                <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+                  {link.label}
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
+              ))}
+            </nav>
+            <div className="lp-menu-actions">
+              <Link to="/login" className="lp-menu-signin" onClick={() => setOpen(false)}>
+                Sign in
+              </Link>
+              <Link to="/signup" className="lp-menu-cta" onClick={() => setOpen(false)}>
+                Start studying
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
+  )
+}
+
+function Hero({ paused, onToggle }: { paused: boolean; onToggle: () => void }) {
+  return (
+    <section className="lp-hero lp-hero-hands" id="top" aria-labelledby="landing-title">
+      <div className="lp-hero-bg" aria-hidden="true">
+        <span className="lp-hero-glow" />
+        <span className="lp-hero-mesh" />
+      </div>
+
+      <DotHands paused={paused} dotColor="#a48ff0" className="lp-hero-hands-art" />
+
+      <div className="lp-wrap lp-hero-hands-inner">
+        <h1 className="lp-hero-title" id="landing-title">
+          <span>From first read</span>
+          <span>
+            to <em>full recall.</em>
+          </span>
+        </h1>
+        <p className="lp-hero-copy">
+          Studium turns the notes, PDFs and photos you already have into flashcards, quizzes and a revision
+          plan — and shows you the page every answer came from.
+        </p>
+        <div className="lp-hero-cta">
+          <Link to="/signup" className="lp-btn lp-btn-primary">
+            <StarBorder>
+              Start studying
+              <ArrowRight size={15} aria-hidden="true" />
+            </StarBorder>
+          </Link>
+          <a href="#features" className="lp-btn lp-btn-ghost">
+            Explore features
+            <ArrowDown size={14} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="lp-cta-pause"
+        onClick={onToggle}
+        aria-label={paused ? 'Resume background animation' : 'Pause background animation'}
+        title={paused ? 'Resume background animation' : 'Pause background animation'}
+      >
+        {paused ? <Play size={12} fill="currentColor" /> : <Pause size={12} fill="currentColor" />}
+      </button>
+    </section>
+  )
+}
+
+export function Landing() {
+  const [paused, setPaused] = useState(false)
+
+  useEffect(() => {
+    document.body.classList.add('landing-body')
+    const previous = document.documentElement.style.scrollBehavior
+    document.documentElement.style.scrollBehavior = 'smooth'
+    return () => {
+      document.body.classList.remove('landing-body')
+      document.documentElement.style.scrollBehavior = previous
     }
   }, [])
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-5 sm:px-8">
-          <Link to="/" className="inline-flex items-center gap-2.5">
-            <BrandMark className="size-9" />
-            <span className="font-semibold tracking-tight text-[20px]">Studium</span>
-          </Link>
-          <nav className="hidden items-center gap-6 text-[15px] text-muted sm:flex">
-            <a href="#features" className="transition-colors hover:text-fg">
-              Features
-            </a>
-            <a href="#how" className="transition-colors hover:text-fg">
-              How it works
-            </a>
-          </nav>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link to="/login" className="inline-flex h-9 items-center gap-1.5 rounded-control bg-fg px-4 text-[15px] font-medium text-bg transition-opacity hover:opacity-90">
-              Sign in
-              <ArrowRight className="size-3.5" />
-            </Link>
-          </div>
+    <main className="landing">
+      <Nav />
+
+      <Hero paused={paused} onToggle={() => setPaused((value) => !value)} />
+
+      <section className="lp-section lp-statement-section" aria-labelledby="statement-title">
+        <div className="lp-wrap">
+          <h2 className="lp-statement-text" id="statement-title">
+            Most study apps give you another place to <span className="is-dim">put notes.</span> Studium gives
+            you <em>something to do with them.</em>
+          </h2>
         </div>
-      </header>
+      </section>
 
-      <main>
-        <section className="mx-auto grid max-w-[1100px] items-center gap-12 px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr]">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-[14px] font-medium text-muted">
-              <Sparkles className="size-3.5 text-accent" />
-              {TAGLINE}
+      <section className="lp-section lp-features-section" id="features" aria-labelledby="features-title">
+        <div className="lp-wrap">
+          <div className="lp-features-head">
+            <h2 className="lp-h2" id="features-title">
+              An intelligent study workspace, not another task list.
+            </h2>
+            <p className="lp-section-lede">
+              Flashcards, quizzes, notebooks and a plan, all built from the material you already uploaded.
             </p>
-            <h1 className="mt-5 text-balance text-[40px] font-semibold leading-[1.03] tracking-[-0.035em] sm:text-[58px]">
-              Your materials. A better way to learn.
-            </h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-muted">
-              Turn course materials into flashcards, quizzes and source-grounded notebooks. Make a study plan, then put it into practice.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link to="/signup" className="inline-flex h-11 items-center gap-2 rounded-control bg-accent px-5 text-[14.5px] font-medium text-on-accent shadow-float transition-colors hover:bg-accent-deep">
-                Start planning for free
-                <ArrowRight className="size-4" />
-              </Link>
-              <a href="#features" className="inline-flex h-11 items-center rounded-control border border-line-strong bg-panel px-5 text-[14.5px] font-medium transition-colors hover:bg-surface-2">
-                Explore Features
-              </a>
-            </div>
-            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[14px] text-faint">
-              {['No calendar to maintain', 'Works with your real availability', 'Your data stays yours'].map((item) => (
-                <li key={item} className="inline-flex items-center gap-1.5">
-                  <Check className="size-3.5 text-success" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24, rotate: -1.5 }}
-            animate={{ opacity: 1, y: 0, rotate: -1.5 }}
-            transition={{ duration: 0.75, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mx-auto w-full max-w-[460px]"
-          >
-            <div className="absolute inset-0 translate-x-3 translate-y-3 rotate-[3deg] rounded-[24px] bg-accent-soft" />
-            <div className="relative rounded-[22px] border border-line bg-panel p-5 shadow-float">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint">This week</p>
-                  <p className="mt-0.5 text-[15px] font-semibold">Six sessions, 4h 30m</p>
-                </div>
-                <span className="rounded-tile bg-success-soft px-2 py-1 text-[13px] font-medium text-success">On track</span>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                {[
-                  { title: 'Calculus revision', time: 'Today · 5:00 PM', color: '#635BFF' },
-                  { title: "Newton's laws", time: 'Tomorrow · 6:00 PM', color: '#2F77D1' },
-                  { title: 'Chemical bonding', time: 'Thu · 5:30 PM', color: '#1F9D72' },
-                ].map((session) => (
-                  <div key={session.title} className="flex items-center gap-3 rounded-card border border-line px-3 py-2.5">
-                    <span className="h-8 w-1 rounded-full" style={{ background: session.color }} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium">{session.title}</span>
-                      <span className="block text-[13px] text-faint">{session.time}</span>
-                    </span>
-                    <span className="rounded-tile bg-surface-2 px-2 py-0.5 text-[11px] text-muted">50m</span>
-                  </div>
-                ))}
-              </div>
-
-              <div ref={bars} className="mt-5 flex h-[86px] items-end gap-2">
-                {[42, 70, 54, 88, 60, 34, 76].map((height, index) => (
-                  <div key={index} data-bar className="flex h-full w-full flex-col justify-end gap-1">
-                    <div className="w-full rounded-t-[4px] bg-accent/30" style={{ height: `${height}%` }} />
-                    <span className="text-center text-[9.5px] text-faint">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-[13px] leading-relaxed text-faint">Illustrative preview — your plan is built from your own subjects and availability.</p>
-            </div>
-          </motion.div>
-        </section>
-
-        <section id="features" className="border-t border-line bg-panel/40">
-          <div className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
-            <div className="max-w-xl">
-              <p className="text-[14px] font-medium text-accent">What it does</p>
-              <h2 className="mt-2 text-balance text-[28px] font-semibold tracking-[-0.025em] sm:text-[34px]">An intelligent study workspace, not another task list.</h2>
-            </div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ScrollReveal>
+            <div className="study-feature-grid">
               {FEATURES.map((feature, index) => (
-                <motion.div
+                <article
                   key={feature.title}
-                  initial={{ opacity: 0, y: 14 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-60px' }}
-                  transition={{ duration: 0.45, delay: index * 0.05 }}
-                  className={index === 0 ? 'rounded-card border border-accent/20 bg-accent-soft/60 p-5 sm:col-span-2 lg:col-span-1' : 'rounded-card border border-line bg-panel p-5'}
+                  className={cx('study-feature-card', index === 0 && 'study-feature-cards', feature.art)}
                 >
-                  <span className="grid size-9 place-items-center rounded-tile bg-panel text-accent shadow-card">
-                    <feature.icon className="size-4" />
-                  </span>
-                  <h3 className="mt-4 text-[15px] font-semibold">{feature.title}</h3>
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-muted">{feature.detail}</p>
-                </motion.div>
+                  <div className="study-feature-art" aria-hidden="true" />
+                  <div className="study-feature-content">
+                    <h3>{feature.title}</h3>
+                    <p>{feature.copy}</p>
+                  </div>
+                </article>
               ))}
             </div>
-          </div>
-        </section>
+          </ScrollReveal>
+        </div>
+      </section>
 
-        <section id="how" className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8 sm:py-20">
-          <div className="max-w-xl">
-            <p className="text-[14px] font-medium text-accent">How it works</p>
-            <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.025em] sm:text-[34px]">Three steps to a week you can actually follow.</h2>
+      <section className="lp-section lp-demo-section" id="demo" aria-labelledby="demo-title">
+        <div className="lp-wrap">
+          <div className="lp-features-head">
+            <h2 className="lp-h2" id="demo-title">
+              See the workspace <em>in motion.</em>
+            </h2>
+            <p className="lp-section-lede">
+              A minute inside Studium: the overview, flashcards, a quiz, a notebook, tasks, the planner —
+              rescheduling and marking a session done — a focus timer, and analytics. Recorded straight
+              through, nothing staged.
+            </p>
           </div>
-          <ol className="mt-10 grid gap-4 lg:grid-cols-3">
-            {STEPS.map((step, index) => (
-              <li key={step.title} className="rounded-card border border-line bg-panel p-6">
-                <span className="font-serif text-[40px] leading-none text-accent/35">0{index + 1}</span>
-                <h3 className="mt-4 text-[16px] font-semibold">{step.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-muted">{step.detail}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
 
-        <section className="border-y border-line bg-fg text-bg">
-          <div className="mx-auto flex max-w-[1100px] flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 sm:py-16 lg:flex-row lg:items-center">
-            <div>
-              <h2 className="text-balance text-[32px] font-semibold tracking-[-0.03em] sm:text-[40px]">Less planning. More learning.</h2>
-              <p className="mt-2 max-w-xl text-[14.5px] text-white/65">Build your study profile once, then let the plan keep up with your week.</p>
-            </div>
-            <Link to="/signup" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-control bg-white px-5 text-[14.5px] font-medium text-fg transition-opacity hover:opacity-90">
-              Create Your Study Plan
-              <ArrowRight className="size-4" />
+          <ScrollReveal>
+            <figure className="lp-demo-frame">
+              <div className="lp-demo-chrome" aria-hidden="true">
+                <span className="lp-demo-dots">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <span className="lp-demo-url">app.studium — a sample workspace</span>
+              </div>
+              <video
+                className="lp-demo-video"
+                controls
+                playsInline
+                preload="metadata"
+                poster="/demo/studium-demo-poster.jpg"
+                width={1440}
+                height={900}
+                aria-label="Screen recording of a Studium study session: overview, flashcards, quiz, notebook, tasks, planner, focus timer and analytics"
+              >
+                <source src="/demo/studium-demo.mp4" type="video/mp4" />
+                Your browser cannot play this video.{' '}
+                <Link to="/signup">Create an account to try the workspace.</Link>
+              </video>
+            </figure>
+            <p className="lp-demo-caption">
+              Recorded in a sample workspace — no mockups, no staged screens. Press play and follow the cursor.
+            </p>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      <section className="lp-section lp-how" id="how" aria-labelledby="how-title">
+        <div className="lp-wrap">
+          <div className="lp-features-head">
+            <h2 className="lp-h2" id="how-title">
+              Three moves, then <em>you are studying.</em>
+            </h2>
+            <p className="lp-section-lede">
+              Add the material you already have, practise it, then decide when you will come back to it.
+            </p>
+          </div>
+          <FigureTriptych />
+        </div>
+      </section>
+
+      <section className="lp-section lp-session" id="session" aria-labelledby="session-title">
+        <div className="lp-wrap lp-session-grid">
+          <div className="lp-session-intro">
+            <h2 className="lp-h2" id="session-title">
+              What a study session <em>actually looks like.</em>
+            </h2>
+            <p className="lp-section-lede">
+              One chapter, two passes, a quiz, and a time booked for next week.
+            </p>
+            <Link to="/signup" className="lp-inline-link">
+              Try it with your own notes
+              <ArrowRight size={14} aria-hidden="true" />
             </Link>
           </div>
-        </section>
-      </main>
+          <SessionTimeline />
+        </div>
+      </section>
 
-      <footer className="mx-auto max-w-[1100px] px-5 py-10 sm:px-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="max-w-sm">
-            <div className="inline-flex items-center gap-2.5">
-              <BrandMark className="size-8" />
-              <span className="font-serif text-[19px]">Studium</span>
+      <section className="lp-section lp-diff-section" aria-labelledby="diff-title">
+        <div className="lp-wrap">
+          <h2 className="lp-h2" id="diff-title">
+            The difference is <em>the follow-through.</em>
+          </h2>
+
+          <div className="lp-diff">
+            <div className="lp-diff-col is-old">
+              <h3 className="lp-diff-label">Without a system</h3>
+              <ul>
+                <li>Notes in four apps, half of them screenshots</li>
+                <li>Cards made the night before</li>
+                <li>A plan you abandon by the end of the week</li>
+                <li>No idea what you actually retained</li>
+              </ul>
             </div>
-            <p className="mt-2.5 text-[14px] leading-relaxed text-muted">An AI study planner that turns academic workload into a realistic schedule you can follow.</p>
+            <div className="lp-diff-col is-new">
+              <h3 className="lp-diff-label">With Studium</h3>
+              <ul>
+                <li>The reading you already have, as the source</li>
+                <li>Cards and questions from that same chapter</li>
+                <li>Short sessions you can move when the week changes</li>
+                <li>Recall per subject, next to your focus minutes</li>
+              </ul>
+            </div>
           </div>
-          <nav className="flex flex-wrap gap-x-8 gap-y-2 text-[15px] text-muted">
-            <a href="#features" className="hover:text-fg">
-              Features
-            </a>
-            <a href="#how" className="hover:text-fg">
-              How it works
-            </a>
-            <a href="https://github.com/rayyanallii/studium" target="_blank" rel="noreferrer noopener" className="hover:text-fg">
-              GitHub
-            </a>
-            <Link to="/login" className="hover:text-fg">
+        </div>
+      </section>
+
+      <section className="lp-section lp-pricing-section" id="pricing" aria-labelledby="pricing-title">
+        <div className="lp-wrap">
+          <div className="lp-features-head">
+            <h2 className="lp-h2" id="pricing-title">
+              Start free. Upgrade when <em>the term gets heavy.</em>
+            </h2>
+            <p className="lp-section-lede">
+              The free workspace covers an ordinary week. Plus is for the weeks when every subject has a
+              deadline on the same day.
+            </p>
+          </div>
+
+          <div className="lp-pricing">
+            <article className="lp-plan">
+              <div className="lp-plan-top">
+                <h3 className="lp-plan-name">Free</h3>
+              </div>
+              <p className="lp-plan-price">
+                £0 <span>forever</span>
+              </p>
+              <p className="lp-plan-copy">Everything you need to turn one term of reading into a routine.</p>
+              <ul>
+                <li>Upload notes, PDFs and photos</li>
+                <li>Flashcards, quizzes and notebooks</li>
+                <li>Weekly planner and focus timer</li>
+                <li>Study history and analytics</li>
+              </ul>
+              <Link to="/signup" className="lp-btn lp-btn-ghost">
+                Start free
+              </Link>
+            </article>
+
+            <article className="lp-plan is-featured">
+              <div className="lp-plan-top">
+                <h3 className="lp-plan-name">Plus</h3>
+                <span className="lp-plan-badge">For exam terms</span>
+              </div>
+              <p className="lp-plan-price">
+                £6 <span>per month</span>
+              </p>
+              <p className="lp-plan-copy">More room for every subject, and more AI for the revision weeks.</p>
+              <ul>
+                <li>Everything in Free</li>
+                <li>Higher AI limits through exam season</li>
+                <li>More sources and study sets in your library</li>
+                <li>Priority help when something breaks</li>
+              </ul>
+              <Link to="/signup" className="lp-btn lp-btn-primary">
+                <StarBorder>
+                  Get Plus
+                  <ArrowRight size={15} aria-hidden="true" />
+                </StarBorder>
+              </Link>
+            </article>
+          </div>
+
+          <p className="lp-pricing-note">
+            No card needed to start. Cancel Plus whenever you like — your notes and study history stay yours.
+          </p>
+        </div>
+      </section>
+
+      <section className="lp-section lp-faq-section" id="questions" aria-labelledby="faq-title">
+        <div className="lp-wrap">
+          <div className="lp-faq-head">
+            <h2 className="lp-h2" id="faq-title">
+              Questions, <em>answered plainly.</em>
+            </h2>
+            <p className="lp-section-lede">
+              The detail on files, citations and deletion lives in the{' '}
+              <Link to="/privacy" className="lp-text-link">
+                privacy notice
+              </Link>
+              .
+            </p>
+          </div>
+
+          <div className="lp-faq">
+            <h3 className="lp-visually-hidden">Frequently asked questions</h3>
+            {FAQS.map(([question, answer]) => (
+              <details className="lp-faq-item" key={question} name="lp-faq">
+                <summary>
+                  <span className="lp-faq-q">{question}</span>
+                  <span className="lp-faq-icon" aria-hidden="true">
+                    <PlusIcon />
+                  </span>
+                </summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-cta" aria-labelledby="lp-cta-title">
+        <div className="lp-cta-inner">
+          <h2 className="lp-cta-title" id="lp-cta-title">
+            <BlurText text="Bring the reading." />
+            <br />
+            <em>
+              <BlurText text="Leave with a plan." delay={0.12} />
+            </em>
+          </h2>
+          <div className="lp-cta-actions">
+            <Link to="/signup" className="lp-btn lp-btn-primary">
+              <StarBorder>
+                Start studying
+                <ArrowRight size={15} aria-hidden="true" />
+              </StarBorder>
+            </Link>
+            <Link to="/login" className="lp-btn lp-btn-ghost">
               Sign in
             </Link>
-          </nav>
+          </div>
         </div>
-        <p className="mt-8 border-t border-line pt-5 text-[14px] text-faint">© {new Date().getFullYear()} Studium. A personal study project.</p>
+      </section>
+
+      <footer className="lp-footer">
+        <div className="lp-wrap">
+          <div className="lp-footer-main">
+            <div className="lp-footer-brand">
+              <Link to="/" aria-label="Studium home">
+                <BrandMark src="/brand/studium-wordmark-tight.png" className="lp-footer-logo" />
+              </Link>
+              <p>Practice questions from your own notes, and a plan for when to come back to them.</p>
+            </div>
+
+            <nav className="lp-footer-col" aria-label="Study tools">
+              <h2>Study</h2>
+              <Link to="/flashcards">Flashcards</Link>
+              <Link to="/quizzes">Quizzes</Link>
+              <Link to="/notebooks">Notebooks</Link>
+              <Link to="/planner">Planner</Link>
+              <Link to="/focus">Focus timer</Link>
+            </nav>
+
+            <nav className="lp-footer-col" aria-label="Explore">
+              <h2>Explore</h2>
+              <a href="#features">Features</a>
+              <a href="#demo">Demo</a>
+              <a href="#how">How it works</a>
+              <a href="#pricing">Pricing</a>
+              <a href="#questions">FAQ</a>
+            </nav>
+
+            <nav className="lp-footer-col" aria-label="Account">
+              <h2>Account</h2>
+              <Link to="/signup">Create an account</Link>
+              <Link to="/login">Sign in</Link>
+              <Link to="/forgot-password">Reset password</Link>
+            </nav>
+          </div>
+
+          <div className="lp-footer-bottom">
+            <nav className="lp-footer-legal" aria-label="Legal">
+              <Link to="/privacy">Privacy notice</Link>
+              <Link to="/terms">Terms of use</Link>
+              <Link to="/accessibility">Accessibility</Link>
+              <Link to="/cookies">Cookie statement</Link>
+            </nav>
+            <p>© {new Date().getFullYear()} Studium</p>
+            <a href="#top">
+              Back to top
+              <ArrowUpRight size={13} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
       </footer>
-    </div>
+    </main>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   )
 }

@@ -14,6 +14,7 @@ import { supabase } from './lib/supabase'
 import { AuthCallback, AuthPage } from './pages/AuthPage'
 import { Dashboard } from './pages/Dashboard'
 import { Landing } from './pages/Landing'
+import { Legal, legalPages, type LegalKind } from './pages/Legal'
 import { Onboarding } from './pages/Onboarding'
 import { SubjectDetail } from './pages/SubjectDetail'
 import { Subjects } from './pages/Subjects'
@@ -34,7 +35,7 @@ function Splash() {
   return (
     <div className="grid min-h-screen place-items-center bg-bg">
       <div className="flex flex-col items-center gap-3">
-        <BrandMark className="size-12" />
+        <BrandMark className="h-16 w-32" />
         <div role="status" aria-label="Loading your workspace" className="w-[min(85vw,720px)] space-y-5"><Skeleton className="h-10 w-48" /><div className="grid grid-cols-3 gap-4"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div><Skeleton className="h-56" /></div>
       </div>
     </div>
@@ -97,8 +98,11 @@ function AppRoutes() {
 }
 
 function Gate() {
+  const { pathname } = useLocation()
   const { session, loading } = useSession()
   const me = useMe()
+  const legalPath = pathname.replace(/^\/|\/$/g, '')
+  if (Object.hasOwn(legalPages, legalPath)) return <Legal key={legalPath} kind={legalPath as LegalKind} />
 
   // With Supabase configured, the browser session decides public vs private.
   if (supabase) {

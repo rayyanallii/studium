@@ -1,0 +1,19 @@
+.figure .figure-art { height: auto; }
+
+.figure-art .figure-illustration {
+  display: block;
+  width: min(100%, 210px);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  background-image: url('/images/study-workflow.webp');
+  background-repeat: no-repeat;
+  background-size: 300% 100%;
+}
+
+.figure-illustration[data-position='left'] { background-position: left center; }
+.figure-illustration[data-position='center'] { background-position: center; }
+.figure-illustration[data-position='right'] { background-position: right center; }
+
+@media (max-width: 760px) {
+  .figure-art .figure-illustration { width: min(100%, 150px); }
+}

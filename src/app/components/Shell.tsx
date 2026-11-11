@@ -24,7 +24,6 @@ import { useScrollActivity } from '../lib/useScrollActivity'
 import { AccountMenu } from './AccountMenu'
 import { BrandMark } from './BrandMark'
 import { AssistantChat, AssistantIcon } from './AssistantChat'
-import { useTheme } from './ThemeProvider'
 import { Button, Dialog, Drawer, Input } from './ui'
 
 type NavItem = { to: string; label: string; icon: LucideIcon }
@@ -49,14 +48,9 @@ const MOBILE_PRIMARY = ['/dashboard', '/subjects', '/library', '/planner']
 const MOBILE_MORE = NAV.filter((item) => !MOBILE_PRIMARY.includes(item.to))
 
 export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
-  const { resolved } = useTheme()
   return (
     <NavLink to="/dashboard" aria-label={BRAND} className={cx('inline-flex items-center gap-2.5 text-[16px] font-semibold tracking-tight', className)}>
-      {compact ? <BrandMark className="size-10 sm:size-11" /> : (
-        <span className="relative flex h-11 w-32 shrink-0 items-center justify-center overflow-hidden sm:w-36">
-          <img src={resolved === 'dark' ? '/brand/studium-wordmark-white.png' : '/brand/studium-wordmark-dark.png'} alt="" className="w-full max-w-none" />
-        </span>
-      )}
+      <BrandMark alt="" className={compact ? 'h-10 w-24' : 'h-12 w-28 sm:w-36'} />
     </NavLink>
   )
 }

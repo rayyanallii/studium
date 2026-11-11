@@ -1,0 +1,90 @@
+/* React Bits-inspired primitives, adapted to plain CSS + motion/react. */
+
+.rb-spotlight {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.rb-spotlight__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms ease;
+}
+
+.rb-spotlight:hover .rb-spotlight__glow {
+  opacity: 1;
+}
+
+.rb-spotlight__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rb-star {
+  position: relative;
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.rb-star__beam {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 50%;
+  width: 240%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 250deg,
+    rgba(255, 255, 255, 0.9) 292deg,
+    rgba(255, 255, 255, 0.15) 320deg,
+    transparent 350deg
+  );
+  animation: rb-star-spin 4.2s linear infinite;
+}
+
+.rb-star__inner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+@keyframes rb-star-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rb-tilt {
+  transform-style: preserve-3d;
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-star__beam {
+    animation: none;
+    opacity: 0.35;
+  }
+  .rb-tilt {
+    transform: none !important;
+    transition: none;
+  }
+}
