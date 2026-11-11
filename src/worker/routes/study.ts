@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { z } from 'zod'
+import { flashcardOptionsSchema } from '../../shared/flashcard-options'
 import type { AppContext } from '../env'
 import { aiKey } from '../env'
 import { exec, id, many, one } from '../db'
@@ -146,7 +147,7 @@ study.get('/artifacts', async c => {
 })
 
 study.post('/generate', async c => {
-  const input = await parseBody(c, z.object({ kind: z.enum(['flashcards', 'quiz', 'notebook']), sourceIds: z.array(z.string().uuid()).min(1).max(STUDY_LIMITS.sourcesPerGeneration).refine(ids => new Set(ids).size === ids.length) }))
+  const input = await parseBody(c, z.object({ kind: z.enum(['flashcards', 'quiz', 'notebook']), sourceIds: z.array(z.string().uuid()).min(1).max(STUDY_LIMITS.sourcesPerGeneration).refine(ids => new Set(ids).size === ids.length), flashcards: flashcardOptionsSchema.optional() }))
   if (isResponse(input)) return input
   if (!aiKey(c.env)) return fail(c, 503, 'ai_unavailable', 'AI is not configured on the server. Your uploaded sources are saved; try generation once it is connected.')
   const db = c.get('db'), owner = c.get('user').sub
@@ -156,7 +157,7 @@ study.post('/generate', async c => {
   const usageId = await reserveAI(db, owner, dailyLimit(c.env.STUDY_AI_DAILY_LIMIT))
   if (!usageId) return fail(c, 429, 'ai_limit', 'Your study AI limit has been reached. Try again tomorrow.')
   try {
-    const { title, ...content } = await generateStudy(c.env, input.kind, sources)
+    const { title, ...content } = await generateStudy(c.env, input.kind, sources, input.flashcards)
     const subjectId = sources.find(source => source.subjectId)?.subjectId ?? null
     const artifactId = id()
     const results = await db.batch([

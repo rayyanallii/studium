@@ -17,15 +17,21 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
   const [preview, setPreview] = useState<StudyMaterial | null>(null)
   const [deleting, setDeleting] = useState<{ id: string; title: string; type: 'source' | 'set' } | null>(null)
   const [generationKind, setGenerationKind] = useState<StudyKind>(kind || 'flashcards')
+  const [cardCount, setCardCount] = useState(8)
+  const [topicMode, setTopicMode] = useState<'all' | 'topic'>('all')
+  const [cardTopic, setCardTopic] = useState('')
+  const isFlashcards = (kind ?? generationKind) === 'flashcards'
   const navigate = useNavigate(), toast = useToast()
   const tool = STUDY_TOOLS.find(tool => tool.kind === kind)
   const sources = materials.data?.items ?? []
   const subjectName = (subjectId: string | null) => (subjectId ? subjectsQuery.data?.items.find(subject => subject.id === subjectId)?.name : null)
   const sets = (artifacts.data?.items ?? []).filter(item => (!kind || item.kind === kind) && item.title.toLowerCase().includes(search.toLowerCase()))
   const selection = selected.filter(id => sources.some(source => source.id === id))
+  const topicSuggestions = [...new Set((artifacts.data?.items ?? []).filter(item => item.kind === 'notebook' && item.sourceIds.some(id => selection.includes(id))).flatMap(item => item.content.sections?.map(section => section.heading) ?? []))].slice(0, 12)
 
   const create = async () => {
-    try { const result = await generate.mutateAsync({ kind: kind ?? generationKind, sourceIds: selection }); navigate(`/study/${result.id}`) } catch { /* mutation error is shown below */ }
+    if (isFlashcards && topicMode === 'topic' && !cardTopic.trim()) return
+    try { const result = await generate.mutateAsync({ kind: kind ?? generationKind, sourceIds: selection, ...(isFlashcards ? { flashcards: { count: cardCount, ...(topicMode === 'topic' ? { topic: cardTopic.trim() } : {}) } } : {}) }); navigate(`/study/${result.id}`) } catch { /* mutation error is shown below */ }
   }
   const confirmDelete = async () => {
     if (!deleting) return
@@ -64,7 +70,13 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
         <p className="text-[15px] leading-relaxed text-muted">Select the source materials you want to study. Your set will include quotes you can check against the originals.</p>
         {!kind && <div className="flex flex-col gap-2">{STUDY_TOOLS.map(option => <button key={option.kind} aria-pressed={generationKind === option.kind} onClick={() => setGenerationKind(option.kind)} className={`flex items-center gap-3 rounded-control border p-3 text-left text-[15px] ${generationKind === option.kind ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:bg-surface-2'}`}><StudyToolIcon kind={option.kind} className="size-9" /><span className="flex-1">{option.title}</span>{generationKind === option.kind && <Check className="size-4" />}</button>)}</div>}
         <div className="rounded-control bg-surface-2 p-3 text-[14px] text-muted">{selection.length ? `${selection.length} ${selection.length === 1 ? 'source selected' : 'sources selected'}` : 'No sources selected yet'}</div>
-        <Button variant="primary" disabled={!selection.length || materials.isError} loading={generate.isPending} onClick={create}>{generate.isPending ? 'Creating your study set…' : `Create ${kind === 'quiz' || (!kind && generationKind === 'quiz') ? 'quiz' : kind === 'notebook' || (!kind && generationKind === 'notebook') ? 'notebook' : 'flashcards'}`}<ArrowRight /></Button>
+        {isFlashcards && <fieldset disabled={generate.isPending} className="min-w-0 space-y-4">
+          <Field label="How many flashcards?"><Select aria-label="Number of flashcards" value={cardCount} onValueChange={value => setCardCount(Number(value))}>{Array.from({ length: 18 }, (_, i) => <option key={i + 3} value={i + 3}>{`${i + 3} cards`}</option>)}</Select></Field>
+          <Field label="What would you like to study?"><Select aria-label="Flashcard coverage" value={topicMode} onValueChange={value => setTopicMode(value as 'all' | 'topic')}><option value="all">All topics in my sources</option><option value="topic">A specific topic</option></Select></Field>
+          {topicMode === 'topic' && <div className="space-y-2"><Field label="Topic"><Input aria-label="Flashcard topic" placeholder="e.g. Oxidation and reduction" maxLength={160} value={cardTopic} onChange={event => setCardTopic(event.target.value)} /></Field><p className="text-xs leading-5 text-muted">Choose a topic covered by your selected materials.</p>{topicSuggestions.length > 0 && <><p className="pt-1 text-xs font-medium text-muted">From your notebooks</p><div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">{topicSuggestions.map(topic => <button key={topic} type="button" onClick={() => setCardTopic(topic)} className="rounded-control border border-line px-2 py-1 text-left text-xs hover:bg-surface-2">{topic}</button>)}</div></>}</div>}
+          <p className="text-xs leading-5 text-muted">{cardCount} cards · {topicMode === 'topic' ? cardTopic.trim() || 'Choose a topic above' : 'All topics'}</p>
+        </fieldset>}
+        <Button variant="primary" disabled={!selection.length || materials.isError || (isFlashcards && topicMode === 'topic' && !cardTopic.trim())} loading={generate.isPending} onClick={create}>{generate.isPending ? 'Creating your study set…' : isFlashcards ? `Create ${cardCount} flashcards` : `Create ${(kind ?? generationKind) === 'quiz' ? 'quiz' : 'notebook'}`}<ArrowRight /></Button>
         {generate.isPending && <p role="status" className="text-[14px] text-muted">Reading your sources and checking citations. This can take about a minute.</p>}
         {generate.error && <Alert tone="danger">{generate.error.message}</Alert>}
         <p className="text-[11px] leading-relaxed text-faint">Selected source text is sent to the study AI to create your set. Check AI explanations against the cited material.</p>

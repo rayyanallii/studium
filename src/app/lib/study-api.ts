@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import { supabase } from './supabase'
+import type { FlashcardOptions } from '../../shared/flashcard-options'
 import type { NotebookMessage, QuizAttempt, StudyArtifact, StudyDetail, StudyKind, StudyMaterial } from '../../shared/study'
 
 export const useMaterials = () => useQuery({ queryKey: ['materials'], queryFn: () => api<{ items: StudyMaterial[] }>('/study/materials') })
@@ -14,7 +15,7 @@ export function useStudyMutation<T, R>(fn: (input: T) => Promise<R>) {
   return useMutation({ mutationFn: fn, onSuccess: async () => { await Promise.all(['materials', 'studyArtifacts', 'studyArtifact'].map(key => client.invalidateQueries({ queryKey: [key] }))) } })
 }
 export const useUploadMaterial = () => useStudyMutation((body: FormData) => api<{ id: string }>('/study/materials', { method: 'POST', body }))
-export const useGenerateStudy = () => useStudyMutation((input: { kind: StudyKind; sourceIds: string[] }) => api<{ id: string }>('/study/generate', { method: 'POST', json: input }))
+export const useGenerateStudy = () => useStudyMutation((input: { kind: StudyKind; sourceIds: string[]; flashcards?: FlashcardOptions }) => api<{ id: string }>('/study/generate', { method: 'POST', json: input }))
 export const useDeleteMaterial = () => useStudyMutation((id: string) => api(`/study/materials/${id}`, { method: 'DELETE' }))
 export const useDeleteArtifact = () => useStudyMutation((id: string) => api(`/study/artifacts/${id}`, { method: 'DELETE' }))
 export const useReviewCard = (id: string) => useStudyMutation((input: { cardIndex: number; learned: boolean }) => api(`/study/artifacts/${id}/review`, { method: 'POST', json: input }))

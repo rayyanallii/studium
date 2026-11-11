@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { generateStudy } from './study-ai'
+import type { Env } from '../env'
+import type { StudyMaterial } from '../../shared/study'
+import { flashcardOptionsSchema } from '../../shared/flashcard-options'
 import { answerSchema, generatedSchemas, gradeQuiz, verifyCitations } from './study-ai'
 
 describe('source-grounded generation', () => {
@@ -32,4 +36,19 @@ describe('quiz scoring', () => {
     expect(() => gradeQuiz([0, 2, 3], [0, -1, 3])).toThrow()
     expect(() => gradeQuiz([0, 2, 3], [0, 1.5, 3])).toThrow()
   })
+})
+
+it('honours flashcard count and topic, and rejects mismatched output', async () => {
+  let sent = ''
+  const source = { id: 'source', text: 'Reduction is the gain of electrons.', title: 'Chemistry' } as StudyMaterial
+  const response = { title: 'Reduction', cards: Array.from({ length: 5 }, (_, i) => ({ front: `Question ${i}`, back: 'Answer', sourceId: 'source', quote: source.text })) }
+  vi.stubGlobal('fetch', vi.fn(async (_url, init) => { sent = init.body; return Response.json({ choices: [{ message: { content: JSON.stringify(response) }, finish_reason: 'stop' }] }) }))
+  try {
+    await generateStudy({ EXPLABS_API_KEY: 'test' } as Env, 'flashcards', [source], { count: 5, topic: 'Reduction' })
+    expect(sent).toContain('exactly 5')
+    expect(sent).toContain('Reduction')
+    await expect(generateStudy({ EXPLABS_API_KEY: 'test' } as Env, 'flashcards', [source], { count: 10 })).rejects.toThrow('requested 10')
+    expect(flashcardOptionsSchema.safeParse({ count: 21 }).success).toBe(false)
+    expect(flashcardOptionsSchema.safeParse({ count: 5, topic: '   ' }).success).toBe(false)
+  } finally { vi.unstubAllGlobals() }
 })
