@@ -10,6 +10,7 @@ import { DateInput, FieldInput, TimeInput } from '../components/fields'
 import { Alert, Button, Card, Dialog, EmptyState, Field, PageHeader, Segmented, Select, Skeleton, useToast } from '../components/ui'
 import { useMe, usePlanner, useSaveSession, useSubjects } from '../lib/api'
 import { cx } from '../lib/cx'
+import { useSessionDrag } from '../lib/use-session-drag'
 import { combine, dateLabel, minutesLabel, nowTimeInput, todayKey } from '../lib/format'
 
 export function Planner() {
@@ -179,10 +180,9 @@ function CalendarGrid({
   onMove: (session: StudySession, startsAt: number) => void
   moving: boolean
 }) {
-  const [drag, setDrag] = useState<{ id: string; offset: number } | null>(null)
-  const [target, setTarget] = useState<{ day: string; minutes: number } | null>(null)
   const hourHeight = 56
   const scroller = useRef<HTMLDivElement>(null)
+  const { drag, target, handlers, consumeClick } = useSessionDrag(scroller, timezone, startHour, hourHeight, moving, onMove)
   useEffect(() => { if (scroller.current) { const first = sessions.filter(session => DateTime.fromMillis(session.startsAt, { zone: timezone }).toISODate() === days[0])[0] ?? sessions[0]; scroller.current.scrollTop = Math.max(0, (first ? DateTime.fromMillis(first.startsAt, { zone: timezone }).hour - 1 : 8) * hourHeight) } }, [days.join(',')])
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index)
   const today = todayKey(timezone)
@@ -216,8 +216,7 @@ function CalendarGrid({
               const daySessions = sessions.filter((session) => session.startsAt >= dayStart && session.startsAt < nextDay)
               return (
                 <div key={day} data-calendar-day={day} className={cx('relative border-l border-line', day === today && 'bg-accent-soft/15')}
-                  onDragOver={event => { if (!drag || moving) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; const minutes = Math.max(0, Math.min(1439, Math.round(((event.clientY - event.currentTarget.getBoundingClientRect().top - drag.offset) / hourHeight * 60 + startHour * 60) / 15) * 15)); setTarget({ day, minutes }) }}
-                  onDrop={event => { event.preventDefault(); if (drag && target?.day === day && !moving) { const session = sessions.find(item => item.id === drag.id); const start = DateTime.fromISO(day, { zone: timezone }).set({ hour: Math.floor(target.minutes / 60), minute: target.minutes % 60 }); if (session && start.isValid && start.toMillis() !== session.startsAt) onMove(session, start.toMillis()) } setDrag(null); setTarget(null) }}>
+                  >
                   {hours.map((hour) => (
                     <div key={hour} className="border-b border-line/50" style={{ height: hourHeight }} />
                   ))}
@@ -231,13 +230,14 @@ function CalendarGrid({
                       <button
                         key={session.id}
                         type="button"
-                        draggable={!moving && session.status === 'planned'}
-                        onDragStart={event => { setDrag({ id: session.id, offset: event.clientY - event.currentTarget.getBoundingClientRect().top }); event.dataTransfer.setData('text/plain', session.id); event.dataTransfer.effectAllowed = 'move' }}
-                        onDragEnd={() => { setDrag(null); setTarget(null) }}
-                        onClick={() => onSelect(session)}
+                        {...handlers(session)}
+                        draggable={false}
+                        onClick={() => { if (!consumeClick()) onSelect(session) }}
                         title={`${session.title} · ${minutesLabel(session.plannedMinutes)}`}
                         className={cx(
                           'absolute left-1 right-1 overflow-hidden rounded-[7px] border-l-[3px] px-1.5 py-1 text-left transition-opacity hover:opacity-90',
+                          !done && !moving && 'touch-none cursor-grab active:cursor-grabbing select-none',
+                          drag?.id === session.id && 'opacity-30',
                           done && 'opacity-70',
                           missed && 'opacity-60',
                         )}
@@ -259,7 +259,7 @@ function CalendarGrid({
                       </button>
                     )
                   })}
-                  {target?.day === day && drag && <div className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-blue-500 bg-panel px-1 text-xs text-fg" style={{ top: (target.minutes / 60 - startHour) * hourHeight }}>{String(Math.floor(target.minutes / 60)).padStart(2, '0')}:{String(target.minutes % 60).padStart(2, '0')}</div>}
+                  {target?.day === day && drag && <div className="pointer-events-none absolute inset-x-0 z-10 rounded-md border-2 border-blue-500 bg-blue-500/20 px-2 py-1 text-xs font-medium text-fg" style={{ top: (target.minutes / 60 - startHour) * hourHeight, height: Math.max(24, (drag.endsAt - drag.startsAt) / 3600000 * hourHeight - 3) }}>{String(Math.floor(target.minutes / 60)).padStart(2, '0')}:{String(target.minutes % 60).padStart(2, '0')}</div>}
                 </div>
               )
             })}
