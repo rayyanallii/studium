@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kindred — Reconnecting Human Creativity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --ink: #111111;
+      --mute: #9a9a9a;
+      --sub: #7b7b7b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    section.hero {
+      position: relative;
+      height: 100vh;
+      min-height: 660px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    canvas#dots {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    nav {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(18px, 2.6vw, 40px);
+      padding-top: 36px;
+      font-size: 13.5px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-right: 10px;
+      color: var(--ink);
+    }
+    .brand svg {
+      display: block;
+    }
+    .nav-link {
+      color: #3a3a3a;
+      transition: color 0.2s ease;
+    }
+    .nav-link:hover {
+      color: #000;
+    }
+    .btn-signin {
+      background: #111;
+      color: #fff;
+      padding: 10px 21px;
+      border-radius: 999px;
+      font-weight: 500;
+      font-size: 13.5px;
+      margin-left: 10px;
+      transition: transform 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-signin:hover {
+      transform: translateY(-1px);
+    }
+
+    div.copy {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      top: 24.5%;
+      transform: translateX(-50%);
+      text-align: center;
+      width: min(92vw, 720px);
+    }
+    h1 {
+      font-weight: 500;
+      letter-spacing: -0.035em;
+      line-height: 1.04;
+      font-size: clamp(38px, 3.75vw, 68px);
+    }
+    h1 .line-1 {
+      display: block;
+      color: var(--mute);
+    }
+    h1 .line-2 {
+      display: block;
+      color: var(--ink);
+    }
+    .subline {
+      margin: 20px auto 0;
+      max-width: 340px;
+      color: var(--sub);
+      font-size: clamp(13px, 1.02vw, 15.5px);
+      line-height: 1.4;
+    }
+
+    .cta {
+      position: relative;
+      display: inline-block;
+      margin-top: clamp(34px, 3.6vw, 52px);
+    }
+    .cta::before {
+      content: '';
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: -6px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(90deg, #ffcf5a, #7dffa8, #5ad7ff, #9b7bff, #ff6fd8, #ffb36b);
+      filter: blur(9px);
+      opacity: 0.85;
+      z-index: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+    .cta:hover::before {
+      opacity: 1;
+      filter: blur(12px);
+      bottom: -9px;
+    }
+    .btn-circle {
+      position: relative;
+      z-index: 1;
+      display: inline-block;
+      background: #111;
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 11px 20px;
+      border-radius: 999px;
+      transition: transform 0.25s ease;
+    }
+    .cta:hover .btn-circle {
+      transform: translateY(-1px);
+    }
+
+    div.logos {
+      position: absolute;
+      z-index: 3;
+      bottom: clamp(28px, 6vh, 64px);
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(26px, 4.6vw, 66px);
+      flex-wrap: wrap;
+      padding: 0 16px;
+      color: #8d8d8d;
+      font-size: clamp(14px, 1.18vw, 17px);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .logo-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .logo-item svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 760px) {
+      nav {
+        justify-content: space-between;
+        padding: 22px 18px 0;
+      }
+      .nav-link {
+        display: none;
+      }
+      .brand {
+        margin-right: 0;
+      }
+      div.copy {
+        top: 20%;
+      }
+      div.logos {
+        gap: 14px 24px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <canvas id="dots"></canvas>
+
+    <nav>
+      <a href="#" class="brand" aria-label="Kindred Home">
+        <svg width="16" height="18" viewBox="0 0 16 18" fill="currentColor">
+          <path d="M2 0h4v18H2zM7 9c3-1 5-4 6-9h3c-1 5-3 8-6 9 3 1 5 4 6 9h-3c-1-5-3-8-6-9z"/>
+        </svg>
+        <span>Kindred</span>
+      </a>
+      <a href="#platform" class="nav-link">Platform</a>
+      <a href="#marketplace" class="nav-link">Marketplace</a>
+      <a href="#creators" class="nav-link">Creators</a>
+      <a href="#resources" class="nav-link">Resources</a>
+      <a href="#company" class="nav-link">Company</a>
+      <a href="#signin" class="btn-signin">Sign In</a>
+    </nav>
+
+    <div class="copy">
+      <h1>
+        <span class="line-1">Reconnecting</span>
+        <span class="line-2">Human Creativity.</span>
+      </h1>
+      <p class="subline">We’re not building another platform. We’re building a place where people belong.</p>
+      <div class="cta">
+        <a href="#circle" class="btn-circle">Join the circle</a>
+      </div>
+    </div>
+
+    <div class="logos">
+      <div class="logo-item">
+        <svg viewBox="0 0 20 20"><path d="M3 15c0-7 5-12 14-12-1 9-6 14-13 13l-1 2-2-1z"/></svg>
+        <span>Lumenix</span>
+      </div>
+      <div class="logo-item">
+        <svg viewBox="0 0 20 20"><path d="M10 1l8 4.5v9L10 19l-8-4.5v-9zM10 6l-4 2.3v4.4L10 15l4-2.3V8.3z"/></svg>
+        <span>Velora</span>
+      </div>
+      <div class="logo-item">
+        <svg viewBox="0 0 20 20"><path d="M10 1a9 9 0 110 18 9 9 0 010-18zm0 3a6 6 0 100 12 6 6 0 000-12zm0 3a3 3 0 110 6 3 3 0 010-6z"/></svg>
+        <span>Quanta</span>
+      </div>
+      <div class="logo-item">
+        <svg viewBox="0 0 20 20"><path d="M1 5q4.5-3 9 0t9 0v3q-4.5 3-9 0t-9 0zm0 7q4.5-3 9 0t9 0v3q-4.5 3-9 0t-9 0z"/></svg>
+        <span>Nimbus</span>
+      </div>
+      <div class="logo-item">
+        <svg viewBox="0 0 20 20"><path d="M1 17L7 6l3 5 3-7 6 13z"/></svg>
+        <span>Solstice</span>
+      </div>
+      <div class="logo-item">
+        <svg viewBox="0 0 20 20"><path d="M10 1l9 4-9 4-9-4zm-9 8l9 4 9-4v3l-9 4-9-4zm0 5l9 4 9-4v2l-9 4-9-4z"/></svg>
+        <span>Parallax</span>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      const SOURCE = 'https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20261030_025250_100df7b8-31fd-4614-aa4a-c1b7d5b6b273.png&w=1600&q=85';
+      const LOCAL_FALLBACK = '/hands-source.webp';
+
+      const canvas = document.getElementById('dots');
+      const ctx = canvas.getContext('2d');
+
+      const fA = document.createElement('canvas');
+      const fB = document.createElement('canvas');
+      const ctxA = fA.getContext('2d', { willReadFrequently: true });
+      const ctxB = fB.getContext('2d', { willReadFrequently: true });
+
+      function hash(a, b) {
+        const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+        return n - Math.floor(n);
+      }
+
+      function smooth(a, b, x) {
+        const v = Math.max(0, Math.min(1, (x - a) / (b - a)));
+        return v * v * (3 - 2 * v);
+      }
+
+      function mixAt(t, on, off, dur) {
+        return smooth(on, on + dur, t) * (1 - smooth(off, off + dur, t));
+      }
+
+      const LOOP = 20;
+      let W = 0, H = 0, DPR = 1;
+      let step = 0, rowStep = 0, cols = 0, rows = 0, R = 0;
+      let seeds = new Float32Array(0);
+      let tiles = []; // [LA, RA, LB, RB]
+      let loaded = false;
+
+      function resize() {
+        W = canvas.clientWidth || window.innerWidth;
+        H = canvas.clientHeight || window.innerHeight;
+        DPR = Math.min(2, window.devicePixelRatio || 1);
+
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+
+        step = Math.max(5, W / 205);
+        rowStep = step * 2.05;
+        cols = Math.ceil(W / step);
+        rows = Math.ceil(H / rowStep);
+        R = step * 0.46;
+
+        fA.width = cols;
+        fA.height = rows;
+        fB.width = cols;
+        fB.height = rows;
+
+        seeds = new Float32Array(cols * rows);
+        for (let j = 0; j < rows; j++) {
+          for (let i = 0; i < cols; i++) {
+            seeds[j * cols + i] = 0.55 * hash(i, j) + 0.45 * hash(j * 3.1, 7.7);
+          }
+        }
+      }
+
+      function render(t) {
+        if (!loaded || !tiles.length || !W || !H) return;
+        t = ((t % LOOP) + LOOP) % LOOP;
+
+        const portrait = H > W;
+        const hw = portrait ? W * 0.66 : W * 0.53;
+        const hh = hw * (0.40 * 1520) / (0.47 * 2688);
+        const cy = portrait ? H * 0.66 : H * 0.54;
+
+        const a = (2 * Math.PI * t) / LOOP;
+
+        // Render both pose fields (fA = pose A, fB = pose B)
+        const fields = [
+          { ctx: ctxA, leftTile: tiles[0], rightTile: tiles[1] },
+          { ctx: ctxB, leftTile: tiles[2], rightTile: tiles[3] }
+        ];
+
+        for (let p = 0; p < 2; p++) {
+          const f = fields[p];
+          const fCtx = f.ctx;
+
+          fCtx.setTransform(1, 0, 0, 1, 0, 0);
+          fCtx.fillStyle = '#ffffff';
+          fCtx.fillRect(0, 0, cols, rows);
+
+          // Left hand: side = 0; Right hand: side = 1
+          for (let side = 0; side < 2; side++) {
+            const isLeft = side === 0;
+            const ph = isLeft ? 0 : Math.PI;
+            const reach = (0.035 * Math.sin(a + ph) + 0.012 * Math.sin(2 * a + 1.3 + ph)) * W;
+            const scale = 1 + 0.07 * Math.sin(a + 0.9 + ph);
+            const rot = (isLeft ? 1 : -1) * 0.045 * Math.sin(a + 2.1 + ph);
+
+            const pivotX = isLeft ? 0 : W;
+            const tile = isLeft ? f.leftTile : f.rightTile;
+            const x = isLeft ? (reach - W * 0.045) : (W - hw + W * 0.045 - reach);
+            const y = cy - hh / 2;
+
+            fCtx.save();
+            fCtx.scale(cols / W, rows / H);
+            fCtx.translate(pivotX, cy);
+            fCtx.rotate(rot);
+            fCtx.scale(scale, scale);
+            fCtx.translate(-pivotX, -cy);
+            fCtx.drawImage(tile, x, y, hw, hh);
+            fCtx.restore();
+          }
+        }
+
+        const dataA = ctxA.getImageData(0, 0, cols, rows).data;
+        const dataB = ctxB.getImageData(0, 0, cols, rows).data;
+
+        // Draw visible dots
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#0d0d0d';
+        ctx.beginPath();
+
+        const tick = Math.floor(t * 7);
+        const mL = mixAt(t, 6.2, 14.6, 1.6);
+        const mR = mixAt(t, 2.4, 10.4, 1.6);
+
+        const LEVELS = [0, 0.26, 0.52, 0.78, 1];
+
+        for (let j = 0; j < rows; j++) {
+          const shift = hash(j, tick) > 0.965 ? Math.round((hash(tick, j) - 0.5) * 8) : 0;
+
+          for (let i = 0; i < cols; i++) {
+            const idx = j * cols + i;
+            const seed = seeds[idx];
+            const m = i < cols / 2 ? mL : mR;
+            const useB = seed < m;
+
+            const sampleCol = Math.max(0, Math.min(cols - 1, i - shift));
+            const sampleByte = (j * cols + sampleCol) * 4;
+
+            const red = useB ? dataB[sampleByte] : dataA[sampleByte];
+            const lum = red / 255;
+
+            let v = Math.max(0, Math.min(1, (1 - lum - 0.16) / 0.42));
+            if (v <= 0) continue;
+
+            // Dissolve front sparkling/thinning
+            if (m > 0.001 && m < 0.999) {
+              const diff = Math.abs(seed - m);
+              if (diff < 0.12) {
+                v *= (diff / 0.12);
+                if (hash(i + tick, j) <= 0.4) {
+                  v *= 0.3;
+                }
+              }
+            }
+
+            // Shimmer
+            v *= 0.86 + 0.14 * Math.sin(t * 3.2 + seed * 40);
+
+            // Center fade: fingertips dissolve before CTA
+            const cx = Math.abs((i + 0.5) / cols - 0.5);
+            v *= smooth(0.035, 0.11, cx);
+
+            // Copy quiet zone: no dots cross headline/subline
+            const ex = cx / (portrait ? 0.44 : 0.20);
+            const quietCenterY = portrait ? 0.33 : 0.385;
+            const ey = (((j + 0.5) * rowStep) / H - quietCenterY) / 0.085;
+            v *= smooth(0.85, 1.25, Math.hypot(ex, ey));
+
+            // Quantise to LEVELS
+            let level = 0;
+            for (let k = 0; k < LEVELS.length; k++) {
+              if (v >= LEVELS[k] - 0.13) {
+                level = LEVELS[k];
+              }
+            }
+
+            if (level <= 0) continue;
+
+            const dotRadius = level === 0.26 ? (R * 0.38) : (R * level);
+            const px = (i + 0.5) * step;
+            const py = (j + 0.5) * rowStep;
+
+            ctx.moveTo(px + dotRadius, py);
+            ctx.arc(px, py, dotRadius, 0, Math.PI * 2);
+          }
+        }
+
+        ctx.fill();
+      }
+
+      window.__render = render;
+
+      function createTiles(img) {
+        const specs = [
+          [0, 0.06, 0.47, 0.40],   // LA
+          [0.53, 0.06, 0.47, 0.40], // RA
+          [0, 0.55, 0.47, 0.40],   // LB
+          [0.53, 0.55, 0.47, 0.40]  // RB
+        ];
+
+        tiles = specs.map(([sx, sy, sw, sh]) => {
+          const tCanvas = document.createElement('canvas');
+          tCanvas.width = 420;
+          tCanvas.height = Math.round(420 * (img.height * sh) / (img.width * sw));
+          const tCtx = tCanvas.getContext('2d');
+          tCtx.imageSmoothingQuality = 'high';
+          tCtx.drawImage(
+            img,
+            sx * img.width, sy * img.height, sw * img.width, sh * img.height,
+            0, 0, tCanvas.width, tCanvas.height
+          );
+          return tCanvas;
+        });
+
+        loaded = true;
+      }
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = function () {
+        createTiles(img);
+        resize();
+        render(0);
+        requestAnimationFrame(tickLoop);
+      };
+
+      img.onerror = function () {
+        // Fallback to local asset if remote blocked
+        const fallback = new Image();
+        fallback.onload = function () {
+          createTiles(fallback);
+          resize();
+          render(0);
+          requestAnimationFrame(tickLoop);
+        };
+        fallback.src = LOCAL_FALLBACK;
+      };
+
+      img.src = SOURCE;
+
+      let startTime = null;
+      function tickLoop(now) {
+        if (!startTime) startTime = now;
+        const elapsedSec = (now - startTime) / 1000;
+        render(elapsedSec);
+        requestAnimationFrame(tickLoop);
+      }
+
+      window.addEventListener('resize', () => {
+        resize();
+        if (startTime) {
+          render((performance.now() - startTime) / 1000);
+        }
+      });
+
+      resize();
+    })();
+  </script>
+</body>
+</html>
