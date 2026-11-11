@@ -60,7 +60,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
             <Checkbox label={`Select ${source.title}`} checked={selection.includes(source.id)} onChange={checked => { if (checked && selection.length >= 4) return toast('Select up to 4 sources.'); setSelected(ids => checked ? [...ids, source.id] : ids.filter(id => id !== source.id)) }} />
             <span className="hidden size-9 shrink-0 place-items-center rounded-tile bg-surface-2 text-muted sm:grid">{source.mime.startsWith('image/') ? <Image className="size-4" /> : <FileText className="size-4" />}</span>
             <button onClick={() => setPreview(source)} className="min-w-0 flex-1 text-left"><span className="block truncate text-[15px] font-medium">{source.title}</span><span className="mt-1 block text-[11px] text-muted">{source.fileName?.split('.').pop()?.toUpperCase() || 'NOTE'} · {source.text.length.toLocaleString()} characters{subjectName(source.subjectId) ? ` · ${subjectName(source.subjectId)}` : ''}</span></button>
-            <Badge tone="success" className="shrink-0 self-center"><Check className="size-3" />Ready</Badge><Button variant="ghost" size="icon-sm" aria-label={`Delete source ${source.title}`} onClick={() => setDeleting({ id: source.id, title: source.title, type: 'source' })}><Trash2 /></Button>
+            <Badge tone="success" className="!self-center"><Check aria-hidden="true" className="size-3 shrink-0" />Ready</Badge><Button variant="ghost" size="icon-sm" aria-label={`Delete source ${source.title}`} onClick={() => setDeleting({ id: source.id, title: source.title, type: 'source' })}><Trash2 /></Button>
           </div>)}
         </div>
       </div>
