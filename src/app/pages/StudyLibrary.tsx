@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { ArrowRight, Check, FileText, Image, Layers, Plus, Search, Trash2, Upload } from 'lucide-react'
-import { Alert, Badge, Button, Card, Checkbox, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Segmented, Select, Skeleton, Textarea, useToast } from '../components/ui'
+import { StudySetsTable, SourceMaterialsTable } from '../components/StudyLibraryTables'
+import { useNavigate } from 'react-router'
+import { ArrowRight, Check, Layers, Plus, Upload } from 'lucide-react'
+import { Alert, Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Segmented, Select, Skeleton, Textarea, useToast } from '../components/ui'
 import { STUDY_TOOLS, StudyToolIcon, StudyTools } from '../components/StudyTools'
 import { useDeleteArtifact, useDeleteMaterial, useGenerateStudy, useMaterials, useStudyArtifacts, useUploadMaterial } from '../lib/study-api'
 import { useSubjects } from '../lib/api'
@@ -13,7 +14,6 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
   const generate = useGenerateStudy(), removeMaterial = useDeleteMaterial(), removeArtifact = useDeleteArtifact()
   const [selected, setSelected] = useState<string[]>([])
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<StudyMaterial | null>(null)
   const [deleting, setDeleting] = useState<{ id: string; title: string; type: 'source' | 'set' } | null>(null)
   const [generationKind, setGenerationKind] = useState<StudyKind>(kind || 'flashcards')
@@ -25,7 +25,7 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
   const tool = STUDY_TOOLS.find(tool => tool.kind === kind)
   const sources = materials.data?.items ?? []
   const subjectName = (subjectId: string | null) => (subjectId ? subjectsQuery.data?.items.find(subject => subject.id === subjectId)?.name : null)
-  const sets = (artifacts.data?.items ?? []).filter(item => (!kind || item.kind === kind) && item.title.toLowerCase().includes(search.toLowerCase()))
+  const sets = (artifacts.data?.items ?? []).filter(item => (!kind || item.kind === kind))
   const selection = selected.filter(id => sources.some(source => source.id === id))
   const topicSuggestions = [...new Set((artifacts.data?.items ?? []).filter(item => item.kind === 'notebook' && item.sourceIds.some(id => selection.includes(id))).flatMap(item => item.content.sections?.map(section => section.heading) ?? []))].slice(0, 12)
 
@@ -45,24 +45,11 @@ export function StudyLibrary({ kind }: { kind?: StudyKind }) {
 
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
       <div className="min-w-0 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-[16px] font-semibold">{kind === 'flashcards' ? 'Your decks' : kind === 'quiz' ? 'Your quizzes' : kind === 'notebook' ? 'Your notebooks' : 'Recent study sets'} <span className="ml-1 text-[14px] font-normal text-muted">{sets.length}</span></h2><div className="relative max-w-[220px]"><Search className="pointer-events-none absolute left-3 top-3 z-10 size-3.5 text-muted" /><Input aria-label="Search study sets" placeholder="Search your sets" className="pl-9" value={search} onChange={event => setSearch(event.target.value)} /></div></div>
-        {artifacts.isLoading ? <Skeleton className="h-52" /> : sets.length === 0 ? <Card className="border border-dashed border-line-strong bg-transparent shadow-none"><EmptyState icon={tool ? <StudyToolIcon kind={tool.kind} /> : <Layers />} title={search ? 'No matching study sets' : 'Your next study session starts here'} description={search ? 'Try another search.' : 'Add your notes or upload a document, then select sources to create your first study set.'} action={!search && <Button onClick={() => setUploadOpen(true)}><Upload />Add study material</Button>} /></Card> : <div className="grid gap-3 sm:grid-cols-2">{sets.map(item => {
-          const config = STUDY_TOOLS.find(tool => tool.kind === item.kind)!
-          const count = item.content.cards?.length ?? item.content.questions?.length ?? item.content.sections?.length
-          return <Card key={item.id} className="group flex flex-col gap-0 border border-line p-0 shadow-none">
-            <Link to={`/study/${item.id}`} className="flex flex-1 flex-col p-5"><div className="mb-4 flex items-center gap-3"><StudyToolIcon kind={config.kind} className="size-12" /><span className="text-[14px] text-muted">{config.title}</span></div><h3 className="text-[15px] font-semibold leading-relaxed">{item.title}</h3><p className="mt-2 text-[14px] text-muted">{count} {item.kind === 'flashcards' ? 'cards' : item.kind === 'quiz' ? 'questions' : 'sections'} · {item.sourceIds.length} {item.sourceIds.length === 1 ? 'source' : 'sources'}</p></Link>
-            <div className="flex items-center justify-between border-t border-line px-5 py-2"><span className="text-[11px] text-faint">{[subjectName(item.subjectId), new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })].filter(Boolean).join(' · ')}</span><Button variant="ghost" size="icon-sm" aria-label={`Delete ${item.title}`} onClick={() => setDeleting({ id: item.id, title: item.title, type: 'set' })}><Trash2 className="size-3.5" /></Button></div>
-          </Card>
-        })}</div>}
-        <div className="flex items-center justify-between pt-3"><h2 className="text-[16px] font-semibold">Source materials <span className="ml-1 text-[14px] font-normal text-muted">{sources.length}</span></h2><span className="text-[14px] text-muted">Choose up to 4</span></div>
-        <div className="overflow-hidden rounded-card border border-line bg-panel">
-          {materials.isLoading ? <Skeleton className="h-32" /> : sources.length === 0 ? <button onClick={() => setUploadOpen(true)} className="flex w-full flex-col items-center gap-3 p-10 text-center hover:bg-surface-2"><Upload className="size-6 text-muted" /><span className="text-[14px] font-medium">A home for your course materials</span><span className="text-[14px] text-muted">PDFs, Word documents, pictures and pasted notes</span></button> : sources.map(source => <div key={source.id} className="flex items-center gap-3 border-b border-line px-4 py-4 last:border-b-0">
-            <Checkbox label={`Select ${source.title}`} checked={selection.includes(source.id)} onChange={checked => { if (checked && selection.length >= 4) return toast('Select up to 4 sources.'); setSelected(ids => checked ? [...ids, source.id] : ids.filter(id => id !== source.id)) }} />
-            <span className="hidden size-9 shrink-0 place-items-center rounded-tile bg-surface-2 text-muted sm:grid">{source.mime.startsWith('image/') ? <Image className="size-4" /> : <FileText className="size-4" />}</span>
-            <button onClick={() => setPreview(source)} className="min-w-0 flex-1 text-left"><span className="block truncate text-[15px] font-medium">{source.title}</span><span className="mt-1 block text-[11px] text-muted">{source.fileName?.split('.').pop()?.toUpperCase() || 'NOTE'} · {source.text.length.toLocaleString()} characters{subjectName(source.subjectId) ? ` · ${subjectName(source.subjectId)}` : ''}</span></button>
-            <Badge tone="success" className="!self-center"><Check aria-hidden="true" className="size-3 shrink-0" />Ready</Badge><Button variant="ghost" size="icon-sm" aria-label={`Delete source ${source.title}`} onClick={() => setDeleting({ id: source.id, title: source.title, type: 'source' })}><Trash2 /></Button>
-          </div>)}
-        </div>
+        <h2 className="text-base font-semibold">{kind === 'flashcards' ? 'Your decks' : kind === 'quiz' ? 'Your quizzes' : kind === 'notebook' ? 'Your notebooks' : 'Study sets'} <span className="ml-1 text-sm font-normal text-muted">{sets.length}</span></h2>
+        {artifacts.isLoading ? <Skeleton className="h-52" /> : sets.length === 0 ? <Card className="border border-dashed border-line-strong bg-transparent shadow-none"><EmptyState icon={tool ? <StudyToolIcon kind={tool.kind} /> : <Layers />} title="Your next study session starts here" description="Add your notes or upload a document, then select sources to create your first study set." action={<Button onClick={() => setUploadOpen(true)}><Upload />Add study material</Button>} /></Card> : <StudySetsTable items={sets} subjectName={subjectName} onDelete={item => setDeleting({ id: item.id, title: item.title, type: 'set' })} />}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3"><h2 className="text-base font-semibold">Source materials <span className="ml-1 text-sm font-normal text-muted">{sources.length}</span></h2><span className="text-sm text-muted">{selection.length} of 4 selected</span></div>
+        {materials.isLoading ? <Skeleton className="h-32" /> : sources.length === 0 ? <Button onClick={() => setUploadOpen(true)}><Upload />Add your first source</Button> : <SourceMaterialsTable items={sources} selection={selection} subjectName={subjectName} onOpen={setPreview} onDelete={source => setDeleting({ id: source.id, title: source.title, type: 'source' })} onSelect={(id, checked) => { if (checked && selection.length >= 4) return toast('Select up to 4 sources.'); setSelected(ids => checked ? [...ids, id] : ids.filter(value => value !== id)) }} />}
+
       </div>
 
       <Card className="flex flex-col gap-4 border border-line p-5 shadow-none xl:sticky xl:top-24">
