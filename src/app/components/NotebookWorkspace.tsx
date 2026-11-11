@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react'
 import { StudyMath } from './StudyMath'
+import { LearningArtifact } from './LearningArtifact'
+import { artifactNotes, artifactPattern } from '../../shared/learning-artifact'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, FileText, MessageCircle, Network, Plus, Save, Send, StickyNote, Trash2 } from 'lucide-react'
 import type { Citation, StudyDetail, StudyMaterial } from '../../shared/study'
@@ -17,6 +19,12 @@ function InlineText({ text }: { text: string }) {
 
 /** Render source-grounded prose without accepting HTML from generated text. */
 export function NotebookText({ text }: { text: string }) {
+  const artifacts = [...text.matchAll(artifactPattern)]
+  if (artifacts.length) {
+    const parts: ReactNode[] = []; let cursor = 0
+    artifacts.forEach((match, index) => { parts.push(<NotebookText key={`text-${index}`} text={text.slice(cursor, match.index)} />, <LearningArtifact key={`artifact-${index}`} json={match[1]} />); cursor = match.index! + match[0].length })
+    return <>{parts}<NotebookText text={text.slice(cursor)} /></>
+  }
   const labels = /^(Definition|Why it matters|Subtopics|Explanation|Worked examples?|Examples?|Connections|Common misconceptions|Recall questions|Key points|Summary|Overview|Important note)\s*:?\s*(.*)$/i
   return <div className="min-w-0 break-words space-y-3 text-[15px] leading-7 text-muted">{text.replace(/(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\])/g, block => block.replace(/\n/g, ' ')).split('\n').filter(line => line.trim()).map((line, index) => {
     const clean = line.trim()
@@ -69,9 +77,10 @@ export function NotebookWorkspace({ item, cite, onOpenSource }: { item: StudyDet
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
-  useEffect(() => { if (panel === 'chat') chatEnd.current?.scrollIntoView({ block: 'nearest' }) }, [item.messages.length, ask.isPending, panel])
+  useEffect(() => { if (panel === 'chat') chatEnd.current?.parentElement?.scrollTo({ top: chatEnd.current.parentElement.scrollHeight }) }, [item.messages.length, ask.isPending, panel])
 
   const addToNotes = (text: string) => {
+    text = artifactNotes(text)
     if (save.isPending) return toast('Wait for this note to finish saving.')
     if ((draft?.body.length ?? 0) + text.length + 2 > 30000) return toast('This excerpt exceeds the note limit. Save your current note and select a shorter passage.')
     setPanel('notes')
@@ -109,18 +118,18 @@ export function NotebookWorkspace({ item, cite, onOpenSource }: { item: StudyDet
     </section>
 
     <div role="separator" aria-label="Resize study guide and notebook tools" aria-orientation="vertical" aria-valuemin={35} aria-valuemax={70} aria-valuenow={Math.round(split)} tabIndex={0} className="notebook-divider hidden touch-none self-stretch cursor-col-resize items-start justify-center outline-none focus-visible:bg-accent/20" onDoubleClick={() => resize(65)} onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); resize(event.key === 'Home' ? 35 : event.key === 'End' ? 70 : split + (event.key === 'ArrowLeft' ? -2 : 2)) } }} onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId) }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId) && content.current) { const bounds = content.current.getBoundingClientRect(); resize((event.clientX - bounds.left) / bounds.width * 100) } }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }}><span className="sticky top-1/2 mt-32 h-12 w-1 rounded-full bg-line" /></div>
-    <aside className="min-w-0 rounded-[20px] border border-line bg-panel xl:sticky xl:top-24">
-      <div className="grid grid-cols-2 border-b border-line p-2" role="tablist" aria-label="Notebook tools">{(['chat', 'notes'] as const).map(tab => <button key={tab} role="tab" aria-selected={panel === tab} aria-controls={`notebook-panel-${tab}`} id={`notebook-tab-${tab}`} onClick={() => setPanel(tab)} className={`flex items-center justify-center gap-2 rounded-control px-3 py-3 text-sm font-medium ${panel === tab ? 'bg-raised text-fg' : 'text-muted hover:bg-surface-2'}`}>{tab === 'chat' ? <MessageCircle className="size-4" /> : <StickyNote className="size-4" />}{tab === 'chat' ? 'Notebook chat' : 'My notes'}</button>)}</div>
-      <div id={`notebook-panel-${panel}`} role="tabpanel" aria-labelledby={`notebook-tab-${panel}`}>
+    <aside className="flex h-[min(760px,calc(100dvh-120px))] min-h-[380px] min-w-0 flex-col overflow-hidden rounded-[20px] border border-line bg-panel xl:sticky xl:top-24">
+      <div className="grid shrink-0 grid-cols-2 border-b border-line p-2" role="tablist" aria-label="Notebook tools">{(['chat', 'notes'] as const).map(tab => <button key={tab} role="tab" aria-selected={panel === tab} aria-controls={`notebook-panel-${tab}`} id={`notebook-tab-${tab}`} onClick={() => setPanel(tab)} className={`flex items-center justify-center gap-2 rounded-control px-3 py-3 text-sm font-medium ${panel === tab ? 'bg-raised text-fg' : 'text-muted hover:bg-surface-2'}`}>{tab === 'chat' ? <MessageCircle className="size-4" /> : <StickyNote className="size-4" />}{tab === 'chat' ? 'Notebook chat' : 'My notes'}</button>)}</div>
+      <div id={`notebook-panel-${panel}`} className="flex min-h-0 flex-1 flex-col" role="tabpanel" aria-labelledby={`notebook-tab-${panel}`}>
       {panel === 'chat' ? <>
-        <div className="max-h-[55vh] min-h-64 space-y-5 overflow-y-auto overscroll-contain p-4" role="log" aria-label="Notebook conversation" aria-live="polite">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4" role="log" aria-label="Notebook conversation" aria-live="polite">
           {!item.messages.length && <div className="py-8 text-center"><MessageCircle className="mx-auto mb-4 size-6 text-muted" /><h3 className="font-semibold">Learn through conversation</h3><p className="mt-2 text-sm leading-6 text-muted">Ask for definitions, examples, a summary, or a deeper explanation. Answers use this notebook’s sources.</p></div>}
           {item.messages.map(message => <div key={message.id} className="space-y-3"><p className="ml-5 rounded-[14px] bg-surface-2 p-3 text-sm leading-6">{message.question}</p><NotebookText text={message.answer} />{message.citations.map(cite)}<Button size="sm" variant="ghost" onClick={() => addToNotes(message.answer)}><Save />Save answer to notes</Button></div>)}
           {ask.isPending && <div role="status" aria-label="Preparing answer"><Skeleton className="mb-2 h-4 w-3/4" /><Skeleton className="mb-2 h-4" /><Skeleton className="h-4 w-2/3" /></div>}
           <div ref={chatEnd} />
         </div>
-        <form className="border-t border-line p-3" onSubmit={event => { event.preventDefault(); void send() }}><Textarea ref={chatInput} aria-label="Ask your notebook" placeholder="Ask a question about your sources…" maxLength={1500} value={question} onChange={event => setQuestion(event.target.value)} disabled={ask.isPending} className="w-full resize-none" rows={3} /><div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-faint">{item.sources.length} {item.sources.length === 1 ? 'source' : 'sources'}</span><Button size="sm" type="submit" variant="primary" loading={ask.isPending} disabled={question.trim().length < 3}><Send />Send</Button></div>{ask.error && <div className="mt-3"><Alert tone="danger">{ask.error.message}</Alert></div>}</form>
-      </> : <div className="space-y-4 p-4">
+        <form className="shrink-0 border-t border-line p-3" onSubmit={event => { event.preventDefault(); void send() }}><Textarea ref={chatInput} aria-label="Ask your notebook" onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send() } }} placeholder="Ask a question about your sources…" maxLength={1500} value={question} onChange={event => setQuestion(event.target.value)} disabled={ask.isPending} className="w-full resize-none" rows={3} /><div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-faint">{item.sources.length} {item.sources.length === 1 ? 'source' : 'sources'}</span><Button size="sm" type="submit" variant="primary" loading={ask.isPending} disabled={question.trim().length < 3}><Send />Send</Button></div>{ask.error && <div className="mt-3"><Alert tone="danger">{ask.error.message}</Alert></div>}</form>
+      </> : <div className="space-y-4 overflow-y-auto p-4">
         {draft ? <>
           <label className="block text-sm font-medium">Note title<Input aria-label="Note title" className="mt-2" value={draft.title} maxLength={160} disabled={save.isPending} onChange={event => { setDraft({ ...draft, title: event.target.value }); setDirty(true) }} /></label>
           <Textarea aria-label="Your notes" placeholder="Write what you’re learning…" className="min-h-64 w-full" value={draft.body} maxLength={30000} disabled={save.isPending} onChange={event => { setDraft({ ...draft, body: event.target.value }); setDirty(true) }} />

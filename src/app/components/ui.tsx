@@ -115,7 +115,7 @@ export function Spinner({ className }: { className?: string }) {
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cx('animate-pulse rounded-tile bg-raised/70', className)} />
+  return <div aria-hidden="true" className={cx('rounded-tile bg-raised/70', className)} />
 }
 
 export function EmptyState({ icon, title, description, action }: { icon?: ReactNode; title: string; description?: string; action?: ReactNode }) {

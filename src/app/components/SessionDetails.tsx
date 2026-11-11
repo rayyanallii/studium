@@ -80,8 +80,8 @@ export function SessionDetails({
 
         {!finished ? (
           <>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Date">
+            <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
+              <Field label="Date" className="min-[420px]:col-span-2">
                 <DateInput value={form.date} onValueChange={(value) => setForm({ ...form, date: value })} />
               </Field>
               <Field label="Start">

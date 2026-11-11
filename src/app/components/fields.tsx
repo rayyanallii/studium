@@ -112,8 +112,8 @@ export function TimeInput({
 }) {
   const [rawHour = '', rawMinute = ''] = value.split(':')
   const hour = HOURS.includes(rawHour) ? rawHour : HOURS[9]
-  const minute = MINUTES.includes(rawMinute) ? rawMinute : MINUTES[0]
-  const minutes = MINUTES.includes(rawMinute) ? MINUTES : [...MINUTES, rawMinute].sort()
+  const minute = /^\d{2}$/.test(rawMinute) && Number(rawMinute) < 60 ? rawMinute : MINUTES[0]
+  const minutes = MINUTES.includes(minute) ? MINUTES : [...MINUTES, minute].sort()
 
   return (
     <div className={cx('flex min-w-0 items-center gap-2', className)}>

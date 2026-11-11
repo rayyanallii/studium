@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Send, Trash2, X } from 'lucide-react'
 import { api, useMe } from '../lib/api'
 import { Alert, Button, ConfirmDialog, Dialog, Textarea } from './ui'
 import type { AssistantAction, AssistantMessage } from '../../shared/assistant'
+const NotebookText = lazy(() => import('./NotebookWorkspace').then(module => ({ default: module.NotebookText })))
 
 export function AssistantIcon({ className = 'size-9' }: { className?: string }) {
   return <img src="/images/study-icons/ai-chatbot-3d.png" alt="" aria-hidden="true" width={1254} height={1254} className={`shrink-0 object-contain ${className}`} draggable={false} />
@@ -58,7 +59,7 @@ export function AssistantChat({ open, onClose }: { open: boolean; onClose: () =>
         <div role="log" aria-label="Conversation" aria-live="polite" className="space-y-5">
           {messages.map(message => <div key={message.id} className={message.role === 'user' ? 'ml-5 rounded-[16px] bg-surface-2 p-4 sm:ml-16' : 'mr-2'}>
             <p className="mb-2 text-xs font-medium text-faint">{message.role === 'user' ? 'You' : 'Studium Assistant'}</p>
-            <p className="whitespace-pre-wrap break-words text-[15px] leading-7">{message.content}</p>
+            {message.role === 'assistant' ? <Suspense fallback={<p className="text-sm text-muted">Loading explanation…</p>}><NotebookText text={message.content} /></Suspense> : <p className="whitespace-pre-wrap break-words text-[15px] leading-7">{message.content}</p>}
             {message.actions.map(action => <ActionCard key={action.id} action={action} timezone={me?.profile.timezone ?? 'UTC'} busy={busy} onDecide={decision => act.mutate({ id: action.id, decision })} />)}
           </div>)}
           {send.isPending && <><div className="ml-5 rounded-[16px] bg-surface-2 p-4 sm:ml-16"><p className="mb-2 text-xs text-faint">You</p><p className="whitespace-pre-wrap break-words text-[15px] leading-7">{send.variables}</p></div><p role="status" className="flex items-center gap-2 text-sm text-muted"><AssistantIcon className="size-8" />Checking your workspace…</p></>}

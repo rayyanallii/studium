@@ -1,6 +1,6 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react'
 import { DateTime } from 'luxon'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { StudySession } from '../../shared/types'
@@ -17,6 +17,7 @@ export function Planner() {
   const timezone = me?.profile.timezone ?? 'UTC'
   const navigate = useNavigate()
   const toast = useToast()
+  const moveSession = useSaveSession()
   const [view, setView] = useState<'week' | 'day'>(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 'day' : 'week'))
   const [anchor, setAnchor] = useState(() => todayKey(timezone))
   const [selected, setSelected] = useState<StudySession | null>(null)
@@ -40,21 +41,7 @@ export function Planner() {
     setAnchor(next.toISODate() ?? anchor)
   }
 
-  const { startHour, endHour } = useMemo(() => {
-    // The grid is drawn from startHour, so sessions must be positioned
-    // relative to it rather than to midnight.
-    if (sessions.length === 0) return { startHour: 8, endHour: 22 }
-    let earliest = 24
-    let latest = 0
-    for (const session of sessions) {
-      const start = DateTime.fromMillis(session.startsAt, { zone: timezone })
-      const end = DateTime.fromMillis(session.endsAt, { zone: timezone })
-      const endHour = end.minute > 0 ? end.hour + 1 : end.hour
-      if (start.hour < earliest) earliest = start.hour
-      if (endHour > latest) latest = endHour
-    }
-    return { startHour: Math.max(0, earliest - 1), endHour: Math.min(24, Math.max(earliest + 4, latest + 1)) }
-  }, [sessions, timezone])
+  const startHour = 0, endHour = 24
 
   const label =
     view === 'day'
@@ -146,6 +133,8 @@ export function Planner() {
           startHour={startHour}
           endHour={endHour}
           onSelect={setSelected}
+          moving={moveSession.isPending}
+          onMove={(session, startsAt) => moveSession.mutate({ id: session.id, values: { startsAt, endsAt: startsAt + session.endsAt - session.startsAt } }, { onSuccess: () => toast('Session moved'), onError: error => toast(error.message, 'danger') })}
         />
       )}
 
@@ -160,7 +149,7 @@ export function Planner() {
           <span>
             <span className="font-medium text-fg">{data.totals.completed}</span> completed sessions
           </span>
-          <span className="text-faint">Tap a session to reschedule, skip or start it.</span>
+          <span className="text-faint">Drag a session to move it in 15-minute steps, or tap to edit its exact time.</span>
         </div>
       )}
 
@@ -178,6 +167,8 @@ function CalendarGrid({
   startHour,
   endHour,
   onSelect,
+  onMove,
+  moving,
 }: {
   days: string[]
   sessions: StudySession[]
@@ -185,16 +176,22 @@ function CalendarGrid({
   startHour: number
   endHour: number
   onSelect: (session: StudySession) => void
+  onMove: (session: StudySession, startsAt: number) => void
+  moving: boolean
 }) {
+  const [drag, setDrag] = useState<{ id: string; offset: number } | null>(null)
+  const [target, setTarget] = useState<{ day: string; minutes: number } | null>(null)
   const hourHeight = 56
+  const scroller = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (scroller.current) { const first = sessions.filter(session => DateTime.fromMillis(session.startsAt, { zone: timezone }).toISODate() === days[0])[0] ?? sessions[0]; scroller.current.scrollTop = Math.max(0, (first ? DateTime.fromMillis(first.startsAt, { zone: timezone }).hour - 1 : 8) * hourHeight) } }, [days.join(',')])
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index)
   const today = todayKey(timezone)
 
   return (
     <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <div className="min-w-[640px]">
-          <div className="grid border-b border-line" style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0, 1fr))` }}>
+      <div ref={scroller} className="max-h-[70vh] overflow-auto">
+        <div className={days.length === 1 ? 'min-w-[300px]' : 'min-w-[640px]'}>
+          <div className="sticky top-0 z-20 grid border-b border-line bg-panel" style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0, 1fr))` }}>
             <div />
             {days.map((day) => (
               <div key={day} className={cx('border-l border-line px-2 py-2 text-center', day === today && 'bg-accent-soft/40')}>
@@ -215,14 +212,18 @@ function CalendarGrid({
 
             {days.map((day) => {
               const dayStart = DateTime.fromISO(day, { zone: timezone }).startOf('day').toMillis()
-              const daySessions = sessions.filter((session) => session.startsAt >= dayStart && session.startsAt < dayStart + 86_400_000)
+              const nextDay = DateTime.fromISO(day, { zone: timezone }).plus({ days: 1 }).startOf('day').toMillis()
+              const daySessions = sessions.filter((session) => session.startsAt >= dayStart && session.startsAt < nextDay)
               return (
-                <div key={day} className={cx('relative border-l border-line', day === today && 'bg-accent-soft/15')}>
+                <div key={day} data-calendar-day={day} className={cx('relative border-l border-line', day === today && 'bg-accent-soft/15')}
+                  onDragOver={event => { if (!drag || moving) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; const minutes = Math.max(0, Math.min(1439, Math.round(((event.clientY - event.currentTarget.getBoundingClientRect().top - drag.offset) / hourHeight * 60 + startHour * 60) / 15) * 15)); setTarget({ day, minutes }) }}
+                  onDrop={event => { event.preventDefault(); if (drag && target?.day === day && !moving) { const session = sessions.find(item => item.id === drag.id); const start = DateTime.fromISO(day, { zone: timezone }).set({ hour: Math.floor(target.minutes / 60), minute: target.minutes % 60 }); if (session && start.isValid && start.toMillis() !== session.startsAt) onMove(session, start.toMillis()) } setDrag(null); setTarget(null) }}>
                   {hours.map((hour) => (
                     <div key={hour} className="border-b border-line/50" style={{ height: hourHeight }} />
                   ))}
                   {daySessions.map((session) => {
-                    const top = ((session.startsAt - dayStart) / 3_600_000 - startHour) * hourHeight
+                    const localStart = DateTime.fromMillis(session.startsAt, { zone: timezone })
+                    const top = (localStart.hour + localStart.minute / 60 - startHour) * hourHeight
                     const height = Math.max(24, ((session.endsAt - session.startsAt) / 3_600_000) * hourHeight - 3)
                     const done = session.status === 'completed'
                     const missed = session.status === 'missed' || session.status === 'skipped'
@@ -230,6 +231,9 @@ function CalendarGrid({
                       <button
                         key={session.id}
                         type="button"
+                        draggable={!moving && session.status === 'planned'}
+                        onDragStart={event => { setDrag({ id: session.id, offset: event.clientY - event.currentTarget.getBoundingClientRect().top }); event.dataTransfer.setData('text/plain', session.id); event.dataTransfer.effectAllowed = 'move' }}
+                        onDragEnd={() => { setDrag(null); setTarget(null) }}
                         onClick={() => onSelect(session)}
                         title={`${session.title} · ${minutesLabel(session.plannedMinutes)}`}
                         className={cx(
@@ -255,6 +259,7 @@ function CalendarGrid({
                       </button>
                     )
                   })}
+                  {target?.day === day && drag && <div className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-blue-500 bg-panel px-1 text-xs text-fg" style={{ top: (target.minutes / 60 - startHour) * hourHeight }}>{String(Math.floor(target.minutes / 60)).padStart(2, '0')}:{String(target.minutes % 60).padStart(2, '0')}</div>}
                 </div>
               )
             })}
