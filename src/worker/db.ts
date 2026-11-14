@@ -242,8 +242,79 @@ export function ensureSchema(db: D1Database): Promise<void> {
   return ready
 }
 
+let fallbackD1: D1Database | undefined
+
+function getFallbackDb(): D1Database | undefined {
+  if (fallbackD1) return fallbackD1
+  try {
+    // node:sqlite is built into Node 22+ (Netlify Functions, local Node runtimes)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = globalThis as any
+    const req = typeof g.require === 'function' ? g.require : undefined
+    if (!req) return undefined
+    const { DatabaseSync } = req('node:sqlite')
+    if (!DatabaseSync) return undefined
+    const envObj = typeof g.process !== 'undefined' ? g.process.env : undefined
+    const dbPath = envObj?.SQLITE_DB_PATH
+      ? envObj.SQLITE_DB_PATH
+      : (typeof g.process !== 'undefined' && g.process.platform === 'win32' ? 'studium-local.db' : '/tmp/studium.db')
+    const sqlite = new DatabaseSync(dbPath)
+    fallbackD1 = {
+      prepare(sql: string) {
+        let params: unknown[] = []
+        const stmtObj = {
+          bind(...bound: unknown[]) {
+            params = bound
+            return stmtObj
+          },
+          async first<T = Record<string, unknown>>() {
+            const stmt = sqlite.prepare(sql)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result = stmt.get(...(params as any))
+            return (result as T) ?? null
+          },
+          async all<T = Record<string, unknown>>() {
+            const stmt = sqlite.prepare(sql)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const results = stmt.all(...(params as any))
+            return { results: results as T[], success: true, meta: {} as unknown }
+          },
+          async run() {
+            const stmt = sqlite.prepare(sql)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const res = stmt.run(...(params as any))
+            return { success: true, meta: { changes: res.changes, last_row_id: Number(res.lastInsertRowid) } }
+          },
+        }
+        return stmtObj as unknown as D1PreparedStatement
+      },
+      async batch<T = unknown>(statements: D1PreparedStatement[]) {
+        const results: D1Result<T>[] = []
+        for (const s of statements) {
+          const res = await s.run()
+          results.push(res as unknown as D1Result<T>)
+        }
+        return results
+      },
+      async exec(query: string) {
+        sqlite.exec(query)
+        return { count: 1, duration: 0 }
+      },
+      dump(): Promise<ArrayBuffer> {
+        throw new Error('Not implemented')
+      },
+    } as unknown as D1Database
+    return fallbackD1
+  } catch {
+    return undefined
+  }
+}
+
 export const requireDb: MiddlewareHandler<AppContext> = async (c, next) => {
-  const db = c.env.DB
+  let db = c.env.DB
+  if (!db) {
+    db = getFallbackDb()
+  }
   if (!db) {
     return c.json({ success: false, error: { code: 'database_missing', message: 'No database is attached yet. Add D1 storage named DB and redeploy.' } }, 503)
   }

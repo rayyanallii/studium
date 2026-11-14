@@ -19,7 +19,22 @@ import { study } from './routes/study'
 import { assistant } from './routes/assistant'
 import { notebookNotes } from './routes/notebook-notes'
 
-const app = new Hono<AppContext>()
+export const app = new Hono<AppContext>()
+
+app.use('*', async (c, next) => {
+  if (typeof process !== 'undefined' && process.env) {
+    c.env = {
+      ...process.env,
+      ...c.env,
+    } as unknown as Env
+  }
+  const url = new URL(c.req.url)
+  if (url.pathname.startsWith('/.netlify/functions/api')) {
+    const targetPath = url.pathname.replace(/^\/\.netlify\/functions\/api/, '/api')
+    return app.fetch(new Request(new URL(targetPath + url.search, url.origin), c.req.raw), c.env, c.executionCtx)
+  }
+  await next()
+})
 
 app.get('/api/auth/status', (c) => {
   c.header('Cache-Control', 'private, no-store')

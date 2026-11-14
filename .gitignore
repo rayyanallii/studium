@@ -15,3 +15,7 @@ output
 .claude
 # Original setup notes contain credentials; keep them local.
 supabase.md
+.netlify
+.agents
+brag-output
+/*.png

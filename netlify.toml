@@ -1,0 +1,21 @@
+[build]
+  command = "bun run build"
+  publish = "dist/client"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_URL"
+
+[functions]
+  directory = "netlify/functions"
+
+# Route /api calls to the Netlify Function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Route all other URLs to the React SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
