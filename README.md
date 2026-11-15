@@ -8,13 +8,21 @@
 
 **A rigorous, source-grounded AI study workspace and deterministic planner for serious academic workloads.**
 
+<p align="center">
+  <a href="https://studiumaistudy.netlify.app/">
+    <img src="https://img.shields.io/badge/Live_App-studiumaistudy.netlify.app-00C7B7?style=for-the-badge&logo=netlify&logoColor=white" alt="Live Demo on Netlify" />
+  </a>
+</p>
+
 [![React 19](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-Hono-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![Netlify](https://img.shields.io/badge/Netlify-Deployed-00C7B7?logo=netlify&logoColor=white)](https://studiumaistudy.netlify.app/)
 [![Supabase Auth](https://img.shields.io/badge/Supabase-Auth_%26_RLS-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.3-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Vite 8](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Vitest](https://img.shields.io/badge/Tests-Vitest-FCC72B?logo=vitest&logoColor=black)](https://vitest.dev/)
+
+**Live Application:** [https://studiumaistudy.netlify.app/](https://studiumaistudy.netlify.app/)
 
 </div>
 
