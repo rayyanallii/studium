@@ -2542,14 +2542,15 @@ body.landing-body {
 /* ---------------- Hands hero ---------------- */
 
 .lp-hero-hands {
+  --lp-hero-offset: 60px;
   display: block;
-  padding: 138px 0 0;
+  padding: calc(138px + var(--lp-hero-offset)) 0 0;
 }
 
 .lp-hero-hands-art {
   position: absolute !important;
   left: 50%;
-  top: 0;
+  top: var(--lp-hero-offset);
   width: 100vw;
   max-width: none;
   height: 100%;
@@ -2565,7 +2566,7 @@ body.landing-body {
   z-index: 2;
   max-width: 900px;
   margin-inline: auto;
-  padding-bottom: 120px;
+  padding-bottom: calc(120px - var(--lp-hero-offset) + 10px);
   text-align: center;
 }
 
@@ -2904,6 +2905,7 @@ body.landing-body {
     height: 38px;
   }
   .lp-hero-hands {
+    --lp-hero-offset: 0px;
     padding: 118px 0 0;
   }
   .lp-hero-hands-inner {

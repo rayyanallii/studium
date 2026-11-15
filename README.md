@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Studium Logo](public/favicon.svg)
+<img src="public/brand/studium-wordmark-white.png" alt="Studium Logo" width="220" />
 
 ### Understand. Practice. Remember.
 
@@ -433,7 +433,6 @@ All backend routes are hosted under `/api` and require an authenticated session.
 - [x] **Source-Linked Notebooks**: AI chat tethered to source passages with zero fabrication.
 - [x] **Deterministic Study Planner**: 15-minute grid scheduler with automatic conflict resolution.
 - [x] **Tamper-Proof Focus Timer**: Server-persisted stopwatch immune to tab refreshes.
-- [x] **Creation-of-Adam ASCII Hands Hero**: Dynamic canvas dot-matrix animation in Studium purple.
 - [ ] **Spaced Repetition Review Queue**: Automated SuperMemo SM-2 daily card review queues.
 - [ ] **Weak-Topic Practice Generator**: Targeted diagnostic quizzes targeting concepts with low scores.
 - [ ] **Vector Retrieval (pgvector)**: Semantic chunk search for large multi-volume textbooks (1,000+ pages).
