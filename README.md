@@ -26,6 +26,13 @@
 
 </div>
 
+> [!TIP]
+> **Instant Demo Access (No sign-up required)**  
+> Anyone can test the app immediately without creating an account:  
+> - **Email:** `demo.studium@gmail.com`  
+> - **Password:** `StudiumDemo123!`  
+> *(Pre-configured with sample subjects, syllabus topics, and onboarding already completed).*
+
 ---
 
 ## Table of Contents
